@@ -68,8 +68,10 @@ export default function AdminCharitiesPage() {
     };
 
     if (editingId) {
+      // @ts-ignore - Supabase types are not generated yet, bypassing strict check
       await supabase.from("charities").update(payload).eq("id", editingId);
     } else {
+      // @ts-ignore - Supabase types are not generated yet, bypassing strict check
       await supabase.from("charities").insert(payload);
     }
     resetForm();
