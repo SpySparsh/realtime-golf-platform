@@ -57,7 +57,7 @@ export default function AdminCharitiesPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    const payload = {
+    const payload = any ={
       name,
       slug,
       description,
