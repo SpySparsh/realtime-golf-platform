@@ -1,8 +1,10 @@
-import { createServerClient, type CookieOptions } from "@supabase/ssr";
+import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 export async function middleware(request: NextRequest) {
-  let supabaseResponse = NextResponse.next({ request });
+  let supabaseResponse = NextResponse.next({
+    request,
+  });
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -12,10 +14,8 @@ export async function middleware(request: NextRequest) {
         getAll() {
           return request.cookies.getAll();
         },
-        setAll(cookiesToSet: { name: string; value: string; options: CookieOptions }[]) {
-          cookiesToSet.forEach(({ name, value }) =>
-            request.cookies.set(name, value)
-          );
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
           supabaseResponse = NextResponse.next({ request });
           cookiesToSet.forEach(({ name, value, options }) =>
             supabaseResponse.cookies.set(name, value, options)
@@ -25,36 +25,8 @@ export async function middleware(request: NextRequest) {
     }
   );
 
-  // Refresh session — IMPORTANT: do NOT add any logic between this and the return
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  const { pathname } = request.nextUrl;
-
-  // Protected routes — redirect to login if not authenticated
-  const protectedPaths = ["/dashboard", "/subscribe/success"];
-  const adminPaths = ["/admin"];
-
-  const isProtected = protectedPaths.some((p) => pathname.startsWith(p));
-  const isAdmin = adminPaths.some((p) => pathname.startsWith(p));
-
-  if ((isProtected || isAdmin) && !user) {
-    const loginUrl = request.nextUrl.clone();
-    loginUrl.pathname = "/auth/login";
-    loginUrl.searchParams.set("redirectTo", pathname);
-    return NextResponse.redirect(loginUrl);
-  }
-
-  // NOTE: is_admin check intentionally omitted from Edge middleware.
-  // Database queries are not supported in the Edge runtime.
-  // The admin guard is enforced in src/app/admin/layout.tsx (Server Component).
-
-  // Redirect logged-in users away from auth pages
-  const authPaths = ["/auth/login", "/auth/register"];
-  if (user && authPaths.some((p) => pathname.startsWith(p))) {
-    return NextResponse.redirect(new URL("/dashboard", request.url));
-  }
+  // This just refreshes the session token so the user stays logged in
+  await supabase.auth.getUser();
 
   return supabaseResponse;
 }
