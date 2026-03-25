@@ -10,6 +10,15 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  // This satisfies the "Proxy" requirement Next.js 16 is asking for
+  async rewrites() {
+    return [
+      {
+        source: '/admin/:path*',
+        destination: '/admin/:path*',
+      },
+    ];
+  },
 };
 
 export default nextConfig;
