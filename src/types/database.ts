@@ -57,6 +57,7 @@ export interface Charity {
   upcoming_events: CharityEvent[];
   is_featured: boolean;
   is_active: boolean;
+  contact_email?: string;
   created_at: string;
   updated_at: string;
 }
