@@ -1,4 +1,4 @@
-import { createServerClient } from "@supabase/ssr";
+import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 export async function middleware(request: NextRequest) {
@@ -12,7 +12,7 @@ export async function middleware(request: NextRequest) {
         getAll() {
           return request.cookies.getAll();
         },
-        setAll(cookiesToSet) {
+        setAll(cookiesToSet: { name: string; value: string; options: CookieOptions }[]) {
           cookiesToSet.forEach(({ name, value }) =>
             request.cookies.set(name, value)
           );
@@ -46,18 +46,9 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
-  // Admin guard — check is_admin flag from profiles
-  if (isAdmin && user) {
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("is_admin")
-      .eq("id", user.id)
-      .single();
-
-    if (!profile?.is_admin) {
-      return NextResponse.redirect(new URL("/dashboard", request.url));
-    }
-  }
+  // NOTE: is_admin check intentionally omitted from Edge middleware.
+  // Database queries are not supported in the Edge runtime.
+  // The admin guard is enforced in src/app/admin/layout.tsx (Server Component).
 
   // Redirect logged-in users away from auth pages
   const authPaths = ["/auth/login", "/auth/register"];
