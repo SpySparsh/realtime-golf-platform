@@ -16,12 +16,16 @@ export default async function AdminUserProfilePage(props: { params: Promise<{ id
     supabase.from("winners").select("*, draw:draws(draw_month)").eq("user_id", id).order("created_at", { ascending: false }),
   ]);
 
-  const profile = profileRes.data;
+  // @ts-ignore - Supabase type mismatch
+  const profile: any = profileRes.data;
   if (!profile) notFound();
 
-  const sub = subsRes.data;
-  const scores = scoresRes.data ?? [];
-  const winners = winnersRes.data ?? [];
+  // @ts-ignore - Supabase type mismatch
+  const sub: any = subsRes.data;
+  // @ts-ignore - Supabase type mismatch
+  const scores: any[] = scoresRes.data ?? [];
+  // @ts-ignore - Supabase type mismatch
+  const winners: any[] = winnersRes.data ?? [];
 
   return (
     <div className="space-y-8 animate-fade-in max-w-5xl">

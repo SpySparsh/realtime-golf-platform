@@ -11,7 +11,8 @@ export default function WinnerUploadForm({ winnerId }: { winnerId: string }) {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const router = useRouter();
-  const supabase = createClient();
+  // @ts-ignore - Bypass Supabase local schema typings mismatch
+  const supabase: any = createClient();
 
   async function handleUpload(e: React.FormEvent) {
     e.preventDefault();

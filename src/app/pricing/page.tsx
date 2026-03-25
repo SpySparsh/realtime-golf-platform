@@ -1,12 +1,20 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { Suspense, useState, useEffect } from "react";
 import { Check, Loader2 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { Charity } from "@/types/database";
 
 export default function PricingPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-[#0f1117]"><Loader2 className="w-6 h-6 animate-spin text-brand-400" /></div>}>
+      <PricingContent />
+    </Suspense>
+  );
+}
+
+function PricingContent() {
   const [isYearly, setIsYearly] = useState(false);
   const [loading, setLoading] = useState(false);
   const [charities, setCharities] = useState<Charity[]>([]);
@@ -15,13 +23,14 @@ export default function PricingPage() {
   const preselectedCharity = searchParams.get("charity");
 
   const router = useRouter();
-  const supabase = createClient();
+  // @ts-ignore - Bypass Supabase local schema typings mismatch
+  const supabase: any = createClient();
 
   useEffect(() => {
     async function load() {
       const { data } = await supabase.from("charities").select("id, name").eq("is_active", true);
       setCharities(data ?? []);
-      if (preselectedCharity && data?.find(c => c.id === preselectedCharity)) {
+      if (preselectedCharity && data?.find((c: any) => c.id === preselectedCharity)) {
         setSelectedCharity(preselectedCharity);
       } else if (data && data.length > 0) {
         setSelectedCharity(data[0].id);

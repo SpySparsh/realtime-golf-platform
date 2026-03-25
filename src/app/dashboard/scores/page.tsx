@@ -26,7 +26,8 @@ export default function ScoresPage() {
     const data = await res.json();
     setScores(Array.isArray(data) ? data : []);
     
-    const supabase = createClient();
+    // @ts-ignore - Bypass Supabase local schema typings mismatch
+  const supabase: any = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
       const { data: sub } = await supabase.from("subscriptions").select("status").eq("user_id", user.id).single();

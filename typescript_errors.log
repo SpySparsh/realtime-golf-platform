@@ -1,0 +1,103 @@
+src/app/api/scores/[id]/route.ts(27,13): error TS2345: Argument of type '{ score: number | undefined; played_on: string | undefined; notes: string | undefined; }' is not assignable to parameter of type 'never'.
+src/app/api/scores/route.ts(52,6): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(values: never, options?: { count?: "exact" | "planned" | "estimated" | undefined; } | undefined): PostgrestFilterBuilder<{ PostgrestVersion: "12"; }, never, never, null, "scores", never, "POST">', gave the following error.
+    Argument of type '{ user_id: string; score: number; played_on: string; notes: string | null; }' is not assignable to parameter of type 'never'.
+  Overload 2 of 2, '(values: never[], options?: { count?: "exact" | "planned" | "estimated" | undefined; defaultToNull?: boolean | undefined; } | undefined): PostgrestFilterBuilder<{ PostgrestVersion: "12"; }, never, never, null, "scores", never, "POST">', gave the following error.
+    Object literal may only specify known properties, and 'user_id' does not exist in type 'never[]'.
+src/app/api/stripe/checkout/route.ts(45,33): error TS2339: Property 'stripe_customer_id' does not exist on type 'never'.
+src/app/api/stripe/donate/route.ts(5,3): error TS2322: Type '"2024-12-18.acacia"' is not assignable to type '"2025-02-24.acacia"'.
+src/app/api/stripe/portal/route.ts(24,22): error TS2339: Property 'stripe_customer_id' does not exist on type 'never'.
+src/app/api/stripe/portal/route.ts(29,28): error TS2339: Property 'stripe_customer_id' does not exist on type 'never'.
+src/app/api/stripe/webhook/route.ts(56,19): error TS2345: Argument of type '{ status: string; cancelled_at: string; }' is not assignable to parameter of type 'never'.
+src/app/api/stripe/webhook/route.ts(83,24): error TS2339: Property 'email' does not exist on type 'never'.
+src/app/api/stripe/webhook/route.ts(86,27): error TS2339: Property 'email' does not exist on type 'never'.
+src/app/api/stripe/webhook/route.ts(87,29): error TS2339: Property 'full_name' does not exist on type 'never'.
+src/app/api/stripe/webhook/route.ts(109,19): error TS2345: Argument of type '{ status: string; current_period_start: string; current_period_end: string; }' is not assignable to parameter of type 'never'.
+src/app/api/stripe/webhook/route.ts(135,19): error TS2345: Argument of type '{ status: string; }' is not assignable to parameter of type 'never'.
+src/app/api/stripe/webhook/route.ts(187,40): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(values: never, options?: { onConflict?: string | undefined; ignoreDuplicates?: boolean | undefined; count?: "exact" | "planned" | "estimated" | undefined; } | undefined): PostgrestFilterBuilder<{ ...; }, ... 5 more ..., "POST">', gave the following error.
+    Argument of type '{ user_id: string; stripe_customer_id: string; stripe_subscription_id: string; plan: "monthly" | "yearly"; status: "active" | "inactive" | "cancelled" | "past_due" | "trialing"; ... 6 more ...; cancelled_at: string | null; }' is not assignable to parameter of type 'never'.
+  Overload 2 of 2, '(values: never[], options?: { onConflict?: string | undefined; ignoreDuplicates?: boolean | undefined; count?: "exact" | "planned" | "estimated" | undefined; defaultToNull?: boolean | undefined; } | undefined): PostgrestFilterBuilder<...>', gave the following error.
+    Object literal may only specify known properties, and 'user_id' does not exist in type 'never[]'.
+src/app/api/subscription/route.ts(52,13): error TS2345: Argument of type 'Record<string, unknown>' is not assignable to parameter of type 'never'.
+src/app/charities/[slug]/page.tsx(14,23): error TS2339: Property 'name' does not exist on type 'never'.
+src/app/charities/[slug]/page.tsx(15,26): error TS2339: Property 'description' does not exist on type 'never'.
+src/app/charities/[slug]/page.tsx(31,27): error TS2339: Property 'upcoming_events' does not exist on type 'never'.
+src/app/charities/[slug]/page.tsx(48,28): error TS2339: Property 'name' does not exist on type 'never'.
+src/app/charities/[slug]/page.tsx(50,26): error TS2339: Property 'is_featured' does not exist on type 'never'.
+src/app/charities/[slug]/page.tsx(54,53): error TS2339: Property 'id' does not exist on type 'never'.
+src/app/charities/[slug]/page.tsx(60,61): error TS2339: Property 'description' does not exist on type 'never'.
+src/app/charities/[slug]/page.tsx(63,20): error TS2339: Property 'website_url' does not exist on type 'never'.
+src/app/charities/[slug]/page.tsx(65,32): error TS2339: Property 'website_url' does not exist on type 'never'.
+src/app/charities/page.tsx(35,43): error TS2339: Property 'slug' does not exist on type 'never'.
+src/app/charities/page.tsx(36,28): error TS2339: Property 'id' does not exist on type 'never'.
+src/app/charities/page.tsx(43,26): error TS2339: Property 'is_featured' does not exist on type 'never'.
+src/app/charities/page.tsx(49,26): error TS2339: Property 'name' does not exist on type 'never'.
+src/app/charities/page.tsx(52,26): error TS2339: Property 'description' does not exist on type 'never'.
+src/app/charities/page.tsx(56,26): error TS2339: Property 'website_url' does not exist on type 'never'.
+src/app/charities/page.tsx(61,26): error TS2339: Property 'upcoming_events' does not exist on type 'never'.
+src/app/charities/page.tsx(61,54): error TS2339: Property 'upcoming_events' does not exist on type 'never'.
+src/app/charities/page.tsx(63,68): error TS2339: Property 'upcoming_events' does not exist on type 'never'.
+src/app/dashboard/draws/page.tsx(35,51): error TS2339: Property 'prize_amount_pence' does not exist on type 'never'.
+src/app/dashboard/draws/page.tsx(36,50): error TS2339: Property 'payout_status' does not exist on type 'never'.
+src/app/dashboard/draws/page.tsx(64,32): error TS2339: Property 'verification_status' does not exist on type 'never'.
+src/app/dashboard/draws/page.tsx(64,72): error TS2339: Property 'proof_url' does not exist on type 'never'.
+src/app/dashboard/draws/page.tsx(75,30): error TS2339: Property 'verification_status' does not exist on type 'never'.
+src/app/dashboard/draws/page.tsx(75,70): error TS2339: Property 'proof_url' does not exist on type 'never'.
+src/app/dashboard/draws/page.tsx(77,27): error TS2339: Property 'id' does not exist on type 'never'.
+src/app/dashboard/draws/page.tsx(80,72): error TS2339: Property 'match_tier' does not exist on type 'never'.
+src/app/dashboard/draws/page.tsx(81,85): error TS2339: Property 'prize_amount_pence' does not exist on type 'never'.
+src/app/dashboard/draws/page.tsx(82,79): error TS2339: Property 'draw' does not exist on type 'never'.
+src/app/dashboard/draws/page.tsx(85,47): error TS2339: Property 'id' does not exist on type 'never'.
+src/app/dashboard/draws/page.tsx(99,27): error TS2339: Property 'id' does not exist on type 'never'.
+src/app/dashboard/draws/page.tsx(104,26): error TS2339: Property 'match_tier' does not exist on type 'never'.
+src/app/dashboard/draws/page.tsx(106,79): error TS2339: Property 'draw' does not exist on type 'never'.
+src/app/dashboard/draws/page.tsx(110,78): error TS2339: Property 'prize_amount_pence' does not exist on type 'never'.
+src/app/dashboard/draws/page.tsx(113,25): error TS2339: Property 'verification_status' does not exist on type 'never'.
+src/app/dashboard/draws/page.tsx(114,25): error TS2339: Property 'verification_status' does not exist on type 'never'.
+src/app/dashboard/draws/page.tsx(116,26): error TS2339: Property 'verification_status' does not exist on type 'never'.
+src/app/dashboard/draws/page.tsx(118,49): error TS2339: Property 'payout_status' does not exist on type 'never'.
+src/app/dashboard/draws/page.tsx(119,26): error TS2339: Property 'payout_status' does not exist on type 'never'.
+src/app/dashboard/draws/page.tsx(139,54): error TS2339: Property 'draw' does not exist on type 'never'.
+src/app/dashboard/draws/page.tsx(139,80): error TS2339: Property 'id' does not exist on type 'never'.
+src/app/dashboard/draws/page.tsx(141,32): error TS2339: Property 'id' does not exist on type 'never'.
+src/app/dashboard/draws/page.tsx(143,91): error TS2339: Property 'draw_month' does not exist on type 'never'.
+src/app/dashboard/draws/page.tsx(145,57): error TS2339: Property 'match_count' does not exist on type 'never'.
+src/app/dashboard/draws/page.tsx(146,34): error TS2339: Property 'match_count' does not exist on type 'never'.
+src/app/dashboard/draws/page.tsx(146,61): error TS2339: Property 'match_count' does not exist on type 'never'.
+src/app/dashboard/draws/page.tsx(151,27): error TS2339: Property 'drawn_numbers' does not exist on type 'never'.
+src/app/dashboard/draws/page.tsx(152,48): error TS2339: Property 'entry_numbers' does not exist on type 'never'.
+src/app/dashboard/layout.tsx(33,61): error TS2339: Property 'is_admin' does not exist on type 'never'.
+src/app/dashboard/page.tsx(43,55): error TS2339: Property 'prize_amount_pence' does not exist on type 'never'.
+src/app/dashboard/page.tsx(44,34): error TS2339: Property 'status' does not exist on type 'never'.
+src/app/dashboard/page.tsx(81,49): error TS2339: Property 'charity_percentage' does not exist on type 'never'.
+src/app/dashboard/page.tsx(82,30): error TS2339: Property 'charity' does not exist on type 'never'.
+src/app/dashboard/page.tsx(82,54): error TS2339: Property 'charity' does not exist on type 'never'.
+src/app/dashboard/page.tsx(88,55): error TS2339: Property 'prize_pool_contribution_pence' does not exist on type 'never'.
+src/app/dashboard/page.tsx(108,29): error TS2339: Property 'id' does not exist on type 'never'.
+src/app/dashboard/page.tsx(110,33): error TS2339: Property 'played_on' does not exist on type 'never'.
+src/app/dashboard/page.tsx(112,69): error TS2339: Property 'score' does not exist on type 'never'.
+src/app/dashboard/page.tsx(134,100): error TS2339: Property 'draw_month' does not exist on type 'never'.
+src/app/dashboard/page.tsx(136,29): error TS2339: Property 'drawn_numbers' does not exist on type 'never'.
+src/app/dashboard/page.tsx(149,29): error TS2339: Property 'id' does not exist on type 'never'.
+src/app/dashboard/page.tsx(151,71): error TS2339: Property 'match_tier' does not exist on type 'never'.
+src/app/dashboard/page.tsx(154,80): error TS2339: Property 'prize_amount_pence' does not exist on type 'never'.
+src/app/dashboard/page.tsx(155,48): error TS2339: Property 'payout_status' does not exist on type 'never'.
+src/app/dashboard/page.tsx(156,26): error TS2339: Property 'payout_status' does not exist on type 'never'.
+src/app/dashboard/scores/page.tsx(33,24): error TS2339: Property 'status' does not exist on type 'never'.
+src/app/dashboard/settings/page.tsx(35,28): error TS2339: Property 'data' does not exist on type 'never'.
+src/app/dashboard/settings/page.tsx(36,29): error TS2339: Property 'data' does not exist on type 'never'.
+src/app/dashboard/settings/page.tsx(37,26): error TS2339: Property 'data' does not exist on type 'never'.
+src/app/dashboard/settings/page.tsx(53,15): error TS2345: Argument of type '{ full_name: string; phone: string | null; }' is not assignable to parameter of type 'never'.
+src/app/page.tsx(94,33): error TS2339: Property 'id' does not exist on type 'never'.
+src/app/page.tsx(98,76): error TS2339: Property 'name' does not exist on type 'never'.
+src/app/page.tsx(99,81): error TS2339: Property 'description' does not exist on type 'never'.
+src/app/page.tsx(100,51): error TS2339: Property 'id' does not exist on type 'never'.
+src/app/pricing/page.tsx(24,51): error TS2339: Property 'id' does not exist on type 'never'.
+src/app/pricing/page.tsx(27,36): error TS2339: Property 'id' does not exist on type 'never'.
+src/components/dashboard/WinnerUploadForm.tsx(44,17): error TS2345: Argument of type '{ proof_url: string; }' is not assignable to parameter of type 'never'.
+src/components/layout/Navbar.tsx(23,60): error TS2339: Property 'is_admin' does not exist on type 'never'.
+src/lib/supabase/server.ts(20,16): error TS7006: Parameter 'cookiesToSet' implicitly has an 'any' type.
+src/lib/supabase/server.ts(22,37): error TS7031: Binding element 'name' implicitly has an 'any' type.
+src/lib/supabase/server.ts(22,43): error TS7031: Binding element 'value' implicitly has an 'any' type.
+src/lib/supabase/server.ts(22,50): error TS7031: Binding element 'options' implicitly has an 'any' type.

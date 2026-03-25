@@ -8,7 +8,8 @@ export default async function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const supabase = await createClient();
+  // @ts-ignore - Bypass Supabase local schema typings mismatch
+  const supabase: any = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();

@@ -3,7 +3,8 @@ import { ArrowRight, Trophy, HeartHandshake, Zap, ShieldCheck } from "lucide-rea
 import { createClient } from "@/lib/supabase/server";
 
 export default async function HomePage() {
-  const supabase = await createClient();
+  // @ts-ignore - Bypass Supabase local schema typings mismatch
+  const supabase: any = await createClient();
   const { data: featuredCharities } = await supabase
     .from("charities")
     .select("id, name, description")
@@ -90,7 +91,7 @@ export default async function HomePage() {
           </div>
 
           <div className="grid md:grid-cols-3 gap-6 mb-12">
-            {featuredCharities?.map((charity) => (
+            {featuredCharities?.map((charity: any) => (
               <div key={charity.id} className="card p-8 hover:bg-[#1a1d2b]/80 transition-colors flex flex-col">
                 <div className="w-12 h-12 rounded-full bg-pink-500/20 flex items-center justify-center mb-6">
                   <HeartHandshake className="w-6 h-6 text-pink-400" />

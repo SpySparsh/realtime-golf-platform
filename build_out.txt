@@ -1,0 +1,27 @@
+
+> golf-charity-platform@0.1.0 build
+> next build
+
+▲ Next.js 16.2.1 (Turbopack)
+- Environments: .env.local
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 8.0s
+  Running TypeScript ...
+  Finished TypeScript in 8.5s ...
+  Collecting page data using 7 workers ...
+  Generating static pages using 7 workers (0/38) ...
+⨯ useSearchParams() should be wrapped in a suspense boundary at page "/auth/login". Read more: https://nextjs.org/docs/messages/missing-suspense-with-csr-bailout
+    at S (D:\golf_subscription\.next\server\chunks\ssr\node_modules_next_0w2y7fz._.js:2:2692)
+    at r (D:\golf_subscription\.next\server\chunks\ssr\node_modules_next_0w2y7fz._.js:4:6760)
+    at D:\golf_subscription\.next\server\chunks\ssr\_0rjcb_g._.js:1:1062
+    at an (D:\golf_subscription\node_modules\next\dist\compiled\next-server\app-page-turbo.runtime.prod.js:2:84267)
+    at ai (D:\golf_subscription\node_modules\next\dist\compiled\next-server\app-page-turbo.runtime.prod.js:2:86086)
+    at al (D:\golf_subscription\node_modules\next\dist\compiled\next-server\app-page-turbo.runtime.prod.js:2:107860)
+    at ao (D:\golf_subscription\node_modules\next\dist\compiled\next-server\app-page-turbo.runtime.prod.js:2:105275)
+    at aa (D:\golf_subscription\node_modules\next\dist\compiled\next-server\app-page-turbo.runtime.prod.js:2:84619)
+    at ai (D:\golf_subscription\node_modules\next\dist\compiled\next-server\app-page-turbo.runtime.prod.js:2:86135)
+    at ai (D:\golf_subscription\node_modules\next\dist\compiled\next-server\app-page-turbo.runtime.prod.js:2:104615)
+Error occurred prerendering page "/auth/login". Read more: https://nextjs.org/docs/messages/prerender-error
+Export encountered an error on /auth/login/page: /auth/login, exiting the build.
+⨯ Next.js build worker exited with code: 1 and signal: null

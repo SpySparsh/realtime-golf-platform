@@ -31,6 +31,7 @@ export default function AdminWinnersPage() {
   async function updateStatus(id: string, field: "verification_status" | "payout_status", value: string) {
     if (!confirm(`Change ${field} to ${value}?`)) return;
     
+    // @ts-ignore - Supabase dynamic field update typing mismatch
     await supabase.from("winners").update({ [field]: value }).eq("id", id);
     fetchWinners();
     

@@ -1,0 +1,27 @@
+
+> golf-charity-platform@0.1.0 build
+> next build
+
+▲ Next.js 16.2.1 (Turbopack)
+- Environments: .env.local
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 7.7s
+  Running TypeScript ...
+Failed to type check.
+
+./src/app/api/scores/route.ts:52:6
+Type error: No overload matches this call.
+  Overload 1 of 2, '(values: never, options?: { count?: "exact" | "planned" | "estimated" | undefined; } | undefined): PostgrestFilterBuilder<{ PostgrestVersion: "12"; }, never, never, null, "scores", never, "POST">', gave the following error.
+    Argument of type '{ user_id: string; score: number; played_on: string; notes: string | null; }' is not assignable to parameter of type 'never'.
+  Overload 2 of 2, '(values: never[], options?: { count?: "exact" | "planned" | "estimated" | undefined; defaultToNull?: boolean | undefined; } | undefined): PostgrestFilterBuilder<{ PostgrestVersion: "12"; }, never, never, null, "scores", never, "POST">', gave the following error.
+    Object literal may only specify known properties, and 'user_id' does not exist in type 'never[]'.
+
+  [90m50 |[0m   [36mconst[0m { data, error } = [36mawait[0m supabase
+  [90m51 |[0m     .[36mfrom[0m([32m"scores"[0m)
+[31m[1m>[0m [90m52 |[0m     .insert({ user_id: user.id, score, played_on, notes: notes ?? [36mnull[0m })
+  [90m   |[0m      [31m[1m^[0m
+  [90m53 |[0m     .select()
+  [90m54 |[0m     .single();
+  [90m55 |[0m
+Next.js build worker exited with code: 1 and signal: null

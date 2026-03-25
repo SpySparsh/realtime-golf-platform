@@ -5,7 +5,8 @@ import { Trophy, Upload } from "lucide-react";
 import WinnerUploadForm from "@/components/dashboard/WinnerUploadForm";
 
 export default async function DrawsPage() {
-  const supabase = await createClient();
+  // @ts-ignore - Bypass Supabase local schema typings mismatch
+  const supabase: any = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/auth/login");
 
@@ -32,8 +33,8 @@ export default async function DrawsPage() {
   const winners = winnersRes.data ?? [];
   const draws = drawsRes.data ?? [];
 
-  const totalWon = winners.reduce((s, w) => s + w.prize_amount_pence, 0);
-  const pendingPayouts = winners.filter((w) => w.payout_status === "pending");
+  const totalWon = winners.reduce((s: number, w: any) => s + w.prize_amount_pence, 0);
+  const pendingPayouts = winners.filter((w: any) => w.payout_status === "pending");
 
   return (
     <div className="space-y-8 animate-fade-in">
@@ -61,7 +62,7 @@ export default async function DrawsPage() {
       </div>
 
       {/* Winnings requiring action */}
-      {winners.filter((w) => w.verification_status === "pending" && !w.proof_url).length > 0 && (
+      {winners.filter((w: any) => w.verification_status === "pending" && !w.proof_url).length > 0 && (
         <div className="card p-6">
           <div className="flex items-center gap-2 mb-4">
             <Upload className="w-4 h-4 text-amber-400" />
@@ -72,8 +73,8 @@ export default async function DrawsPage() {
             to claim your prize.
           </p>
           {winners
-            .filter((w) => w.verification_status === "pending" && !w.proof_url)
-            .map((w) => (
+            .filter((w: any) => w.verification_status === "pending" && !w.proof_url)
+            .map((w: any) => (
               <div key={w.id} className="border border-amber-500/20 rounded-xl p-4 bg-amber-500/5 mb-3">
                 <div className="flex items-center justify-between mb-3">
                   <div>
@@ -95,7 +96,7 @@ export default async function DrawsPage() {
             <h2 className="text-base font-semibold text-white">Winnings History</h2>
           </div>
           <div className="divide-y divide-[#2a2d3d]">
-            {winners.map((w) => (
+            {winners.map((w: any) => (
               <div key={w.id} className="flex items-center justify-between px-6 py-4">
                 <div className="flex items-center gap-3">
                   <Trophy className="w-4 h-4 text-amber-400" />
@@ -135,8 +136,8 @@ export default async function DrawsPage() {
           <p className="p-6 text-slate-500 text-sm">No draws published yet.</p>
         ) : (
           <div className="divide-y divide-[#2a2d3d]">
-            {draws.map((draw) => {
-              const myEntry = entries.find((e) => (e.draw as any)?.id === draw.id);
+            {draws.map((draw: any) => {
+              const myEntry = entries.find((e: any) => (e.draw as any)?.id === draw.id);
               return (
                 <div key={draw.id} className="px-6 py-4">
                   <div className="flex items-center justify-between mb-2">

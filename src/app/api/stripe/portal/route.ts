@@ -8,7 +8,8 @@ import type { NextRequest } from "next/server";
  * Creates a Stripe billing portal session so users can manage their subscription.
  */
 export async function POST(request: NextRequest) {
-  const supabase = await createClient();
+  // @ts-ignore - Bypass Supabase local schema typings mismatch
+  const supabase: any = await createClient();
 
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {

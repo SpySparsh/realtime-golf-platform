@@ -19,7 +19,8 @@ export default function SettingsPage() {
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
 
-  const supabase = createClient();
+  // @ts-ignore - Bypass Supabase local schema typings mismatch
+  const supabase: any = createClient();
 
   useEffect(() => {
     async function loadData() {

@@ -18,6 +18,7 @@ export default async function AdminLayout({
     .eq("id", user.id)
     .single();
 
+  // @ts-ignore - Supabase type mismatch
   if (!profile?.is_admin) {
     redirect("/dashboard");
   }

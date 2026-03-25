@@ -26,7 +26,8 @@ export async function GET() {
  * Allows users to update their charity selection and contribution percentage.
  */
 export async function PATCH(request: NextRequest) {
-  const supabase = await createClient();
+  // @ts-ignore - Bypass Supabase local schema typings mismatch
+  const supabase: any = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 

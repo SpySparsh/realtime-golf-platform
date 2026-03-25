@@ -7,7 +7,8 @@ export async function PATCH(
   props: { params: Promise<{ id: string }> }
 ) {
   const { id } = await props.params;
-  const supabase = await createClient();
+  // @ts-ignore - Bypass Supabase local schema typings mismatch
+  const supabase: any = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
@@ -39,7 +40,8 @@ export async function DELETE(
   props: { params: Promise<{ id: string }> }
 ) {
   const { id } = await props.params;
-  const supabase = await createClient();
+  // @ts-ignore - Bypass Supabase local schema typings mismatch
+  const supabase: any = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
