@@ -121,8 +121,8 @@ export default function AdminDrawsPage() {
                     <span className={`badge ${d.status === 'published' ? 'badge-green' : 'badge-yellow'}`}>{d.status}</span>
                   </td>
                   <td className="px-6 py-4 font-bold text-white">{formatDrawMonth(d.draw_month)}</td>
-                  <td className="...px-6 py-4 font-semibold text-amber-400">
-                    {d.total_pool_pence > 0 ? formatPence(d.total_pool_pence) : "£0.00"}
+                  <td className="px-6 py-4 font-semibold text-amber-400">
+                    {d.total_prize_pool_pence > 0 ? formatPence(d.total_prize_pool_pence) : "£0.00"}
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex gap-1.5">

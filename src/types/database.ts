@@ -106,19 +106,13 @@ export interface Score {
 
 export interface Draw {
   id: string;
-  draw_month: string;              // ISO 8601 date — always first-of-month
-  draw_type: DrawType;
-  status: DrawStatus;
+  draw_month: string;              // e.g. '2025-03-01'
+  status: string;                  // 'pending' | 'published' | 'completed'
   drawn_numbers: number[];         // 5 integers from 1–45
 
-  total_pool_pence: number;
-  jackpot_pool_pence: number;      // 40% of pool + rollover
-  four_match_pool_pence: number;   // 35% of pool
-  three_match_pool_pence: number;  // 25% of pool
-  carried_over_jackpot_pence: number;
-
-  subscriber_count: number;
-  simulation_result: DrawSimulationResult | null;
+  // Matches the column names written by the Draw Engine API
+  total_prize_pool_pence: number;  // Full pool incl. rollover
+  rollover_amount_pence: number;   // Unclaimed pence carried to next month
 
   published_at: string | null;
   created_at: string;
@@ -235,8 +229,8 @@ export interface Database {
         Returns: number[];
       };
       generate_algorithmic_draw_numbers: {
-        Args: Record<never, never>;
-        Returns: number[];
+        Args: { _limit: number };
+        Returns: Array<{ score: number }>;
       };
       is_admin: {
         Args: Record<never, never>;
