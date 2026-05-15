@@ -5,6 +5,8 @@ type Env = {
   supabaseServiceRoleKey?: string;
   stripeSecretKey?: string;
   stripeWebhookSecret?: string;
+  razorpayWebhookSecret?: string;
+  razorpayWebhookToleranceSeconds: number;
   resendApiKey?: string;
   redisUrl?: string;
   queueWorkerConcurrency: number;
@@ -18,6 +20,10 @@ function readEnv(): Env {
     supabaseServiceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY,
     stripeSecretKey: process.env.STRIPE_SECRET_KEY,
     stripeWebhookSecret: process.env.STRIPE_WEBHOOK_SECRET,
+    razorpayWebhookSecret: process.env.RAZORPAY_WEBHOOK_SECRET,
+    razorpayWebhookToleranceSeconds: Number(
+      process.env.RAZORPAY_WEBHOOK_TOLERANCE_SECONDS ?? 60 * 60 * 25
+    ),
     resendApiKey: process.env.RESEND_API_KEY,
     redisUrl: process.env.REDIS_URL,
     queueWorkerConcurrency: Number(process.env.QUEUE_WORKER_CONCURRENCY ?? 5),

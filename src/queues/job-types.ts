@@ -27,6 +27,12 @@ export type AnalyticsJobData = {
   date: string;
 };
 
+export type PaymentWebhookJobData = {
+  webhookEventId: string;
+  provider: "razorpay";
+  providerEventId: string;
+};
+
 export type DeadLetterJobData = {
   sourceQueue: string;
   sourceJobName: string;
@@ -36,4 +42,3 @@ export type DeadLetterJobData = {
   payload: unknown;
   failedAt: string;
 };
-

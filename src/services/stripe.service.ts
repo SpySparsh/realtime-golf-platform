@@ -4,12 +4,15 @@ import { env, requireEnv } from "@/infrastructure/config/env";
 import { notFound } from "@/utils/app-error";
 import { SubscriptionsRepository } from "@/repositories/subscriptions.repository";
 import { ProfilesRepository } from "@/repositories/profiles.repository";
+import { SubscriptionsService } from "@/services/subscriptions.service";
+import { mapStripeStatusToLifecycle } from "@/services/subscription-state-machine";
 import type { CheckoutInput } from "@/validators/stripe.validator";
 
 export class StripeService {
   constructor(
     private readonly subscriptionsRepository: SubscriptionsRepository,
-    private readonly profilesRepository?: ProfilesRepository
+    private readonly profilesRepository?: ProfilesRepository,
+    private readonly subscriptionsService?: SubscriptionsService
   ) {}
 
   async createCheckoutSession(user: { id: string; email?: string | null }, input: CheckoutInput) {
@@ -109,15 +112,12 @@ export class StripeService {
       case "customer.subscription.created":
       case "customer.subscription.updated": {
         const subscription = event.data.object as Stripe.Subscription;
-        await this.upsertSubscription(subscription);
+        await this.reconcileStripeSubscription(subscription, event.id);
         break;
       }
       case "customer.subscription.deleted": {
         const subscription = event.data.object as Stripe.Subscription;
-        await this.subscriptionsRepository.updateByStripeSubscriptionId(subscription.id, {
-          status: "cancelled",
-          cancelled_at: new Date().toISOString(),
-        });
+        await this.reconcileStripeSubscription(subscription, event.id, "cancelled");
         break;
       }
       case "checkout.session.completed": {
@@ -125,7 +125,7 @@ export class StripeService {
         if (session.mode !== "subscription" || !session.subscription) break;
 
         const stripeSubscription = await stripe.subscriptions.retrieve(session.subscription as string);
-        await this.upsertSubscription(stripeSubscription);
+        await this.reconcileStripeSubscription(stripeSubscription, event.id, "active");
         await this.sendSubscriptionConfirmedEmail(stripeSubscription);
         break;
       }
@@ -135,11 +135,7 @@ export class StripeService {
         if (!subId) break;
 
         const stripeSubscription = await stripe.subscriptions.retrieve(subId);
-        await this.subscriptionsRepository.updateByStripeSubscriptionId(subId, {
-          status: "active",
-          current_period_start: new Date(stripeSubscription.current_period_start * 1000).toISOString(),
-          current_period_end: new Date(stripeSubscription.current_period_end * 1000).toISOString(),
-        });
+        await this.reconcileStripeSubscription(stripeSubscription, event.id, "active");
         break;
       }
       case "invoice.payment_failed": {
@@ -147,7 +143,8 @@ export class StripeService {
         const subId = typeof invoice.subscription === "string" ? invoice.subscription : invoice.subscription?.id;
         if (!subId) break;
 
-        await this.subscriptionsRepository.updateByStripeSubscriptionId(subId, { status: "past_due" });
+        const stripeSubscription = await stripe.subscriptions.retrieve(subId);
+        await this.reconcileStripeSubscription(stripeSubscription, event.id, "payment_failed");
         break;
       }
       default:
@@ -173,7 +170,11 @@ export class StripeService {
     });
   }
 
-  private async upsertSubscription(subscription: Stripe.Subscription) {
+  private async reconcileStripeSubscription(
+    subscription: Stripe.Subscription,
+    providerEventId?: string,
+    forcedStatus?: ReturnType<typeof mapStripeStatusToLifecycle>
+  ) {
     const meta = subscription.metadata ?? {};
     const userId = meta.supabase_user_id;
     if (!userId) return;
@@ -181,23 +182,13 @@ export class StripeService {
     const plan = (meta.plan ?? "monthly") as "monthly" | "yearly";
     const charityPct = parseFloat(meta.charity_percentage ?? "10");
     const amountPence = plan === "monthly" ? 999 : 9999;
-    const statusMap: Record<string, string> = {
-      active: "active",
-      past_due: "past_due",
-      canceled: "cancelled",
-      trialing: "trialing",
-      incomplete: "inactive",
-      incomplete_expired: "inactive",
-      unpaid: "past_due",
-      paused: "inactive",
-    };
-
-    await this.subscriptionsRepository.upsertFromStripe({
+    const lifecycleStatus = forcedStatus ?? mapStripeStatusToLifecycle(subscription.status);
+    const payload = {
       user_id: userId,
       stripe_customer_id: subscription.customer as string,
       stripe_subscription_id: subscription.id,
       plan,
-      status: statusMap[subscription.status] ?? "inactive",
+      status: lifecycleStatus,
       amount_pence: amountPence,
       charity_id: meta.charity_id || null,
       charity_percentage: charityPct,
@@ -207,6 +198,25 @@ export class StripeService {
       cancelled_at: subscription.canceled_at
         ? new Date(subscription.canceled_at * 1000).toISOString()
         : null,
+    };
+
+    const { data: existing } = await this.subscriptionsRepository.findByStripeSubscriptionId(subscription.id);
+    if (!existing) {
+      await this.subscriptionsRepository.upsertFromStripe(payload);
+      const { data: created } = await this.subscriptionsRepository.findByStripeSubscriptionId(subscription.id);
+      await this.subscriptionsService?.scheduleLifecycleJobs(created);
+      return;
+    }
+
+    await this.subscriptionsService?.transitionSubscription({
+      subscription: existing,
+      toStatus: lifecycleStatus,
+      reason: "webhook_reconciled",
+      providerEventId,
+      patch: payload,
+      metadata: {
+        stripeStatus: subscription.status,
+      },
     });
   }
 }

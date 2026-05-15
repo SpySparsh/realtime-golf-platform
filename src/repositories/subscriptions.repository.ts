@@ -11,11 +11,43 @@ export class SubscriptionsRepository {
       .maybeSingle();
   }
 
+  async findById(subscriptionId: string) {
+    return this.supabase
+      .from("subscriptions")
+      .select("*")
+      .eq("id", subscriptionId)
+      .maybeSingle();
+  }
+
   async findStripeCustomerByUserId(userId: string) {
     return this.supabase
       .from("subscriptions")
       .select("stripe_customer_id")
       .eq("user_id", userId)
+      .maybeSingle();
+  }
+
+  async findByStripeSubscriptionId(stripeSubscriptionId: string) {
+    return this.supabase
+      .from("subscriptions")
+      .select("*")
+      .eq("stripe_subscription_id", stripeSubscriptionId)
+      .maybeSingle();
+  }
+
+  async findByRazorpaySubscriptionId(razorpaySubscriptionId: string) {
+    return this.supabase
+      .from("subscriptions")
+      .select("*")
+      .eq("razorpay_subscription_id", razorpaySubscriptionId)
+      .maybeSingle();
+  }
+
+  async findByRazorpayPaymentId(razorpayPaymentId: string) {
+    return this.supabase
+      .from("subscriptions")
+      .select("*")
+      .eq("razorpay_payment_id", razorpayPaymentId)
       .maybeSingle();
   }
 
@@ -48,10 +80,18 @@ export class SubscriptionsRepository {
       .eq("stripe_subscription_id", stripeSubscriptionId);
   }
 
+  async updateById(subscriptionId: string, payload: Record<string, unknown>) {
+    return this.supabase
+      .from("subscriptions")
+      .update(payload)
+      .eq("id", subscriptionId)
+      .select()
+      .single();
+  }
+
   async upsertFromStripe(payload: Record<string, unknown>) {
     return this.supabase
       .from("subscriptions")
       .upsert(payload, { onConflict: "stripe_subscription_id" });
   }
 }
-

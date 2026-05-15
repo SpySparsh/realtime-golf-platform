@@ -26,6 +26,7 @@ export default function DashboardHeader({ profile, subscription }: HeaderProps) 
   const pathname = usePathname();
   const status = subscription?.status;
   const isActive = status === "active";
+  const isWarning = status === "grace_period" || status === "payment_failed" || status === "past_due";
   const isAdmin = profile?.is_admin ?? false;
 
   async function handleSignOut() {
@@ -53,7 +54,7 @@ export default function DashboardHeader({ profile, subscription }: HeaderProps) 
             "badge",
             isActive
               ? "badge-green"
-              : status === "past_due"
+              : isWarning
               ? "badge-yellow"
               : "badge-red"
           )}
@@ -61,16 +62,22 @@ export default function DashboardHeader({ profile, subscription }: HeaderProps) 
           <span
             className={cn(
               "w-1.5 h-1.5 rounded-full",
-              isActive ? "bg-brand-400" : status === "past_due" ? "bg-amber-400" : "bg-red-400"
+              isActive ? "bg-brand-400" : isWarning ? "bg-amber-400" : "bg-red-400"
             )}
           />
           {isActive
             ? "Active"
-            : status === "past_due"
-            ? "Past Due"
+            : status === "grace_period"
+            ? "Grace Period"
+            : status === "payment_failed" || status === "past_due"
+            ? "Payment Failed"
+            : status === "suspended"
+            ? "Suspended"
+            : status === "expired"
+            ? "Expired"
             : status === "cancelled"
             ? "Cancelled"
-            : "Inactive"}
+            : "Pending"}
         </span>
 
         {/* Prize pool info */}

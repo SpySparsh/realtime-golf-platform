@@ -1,11 +1,17 @@
 import { ProfilesRepository } from "@/repositories/profiles.repository";
+import { SubscriptionAuditRepository } from "@/repositories/subscription-audit.repository";
 import { SubscriptionsRepository } from "@/repositories/subscriptions.repository";
 import { StripeService } from "@/services/stripe.service";
+import { SubscriptionsService } from "@/services/subscriptions.service";
 
 export function createStripeService(supabase: any) {
+  const subscriptionsRepository = new SubscriptionsRepository(supabase);
   return new StripeService(
-    new SubscriptionsRepository(supabase),
-    new ProfilesRepository(supabase)
+    subscriptionsRepository,
+    new ProfilesRepository(supabase),
+    new SubscriptionsService(
+      subscriptionsRepository,
+      new SubscriptionAuditRepository(supabase)
+    )
   );
 }
-

@@ -13,9 +13,14 @@
 export type SubscriptionPlan = 'monthly' | 'yearly';
 
 export type SubscriptionStatus =
+  | 'pending'
   | 'active'
-  | 'inactive'
+  | 'suspended'
+  | 'expired'
   | 'cancelled'
+  | 'payment_failed'
+  | 'grace_period'
+  | 'inactive'
   | 'past_due'
   | 'trialing';
 
@@ -78,6 +83,10 @@ export interface Subscription {
   stripe_customer_id: string | null;
   stripe_subscription_id: string | null;
   stripe_price_id: string | null;
+  razorpay_customer_id?: string | null;
+  razorpay_subscription_id?: string | null;
+  razorpay_payment_id?: string | null;
+  razorpay_order_id?: string | null;
 
   plan: SubscriptionPlan;
   status: SubscriptionStatus;
@@ -89,6 +98,10 @@ export interface Subscription {
   current_period_end: string | null;
   cancelled_at: string | null;
   cancel_at_period_end: boolean;
+  payment_retry_count?: number;
+  last_payment_failed_at?: string | null;
+  grace_period_ends_at?: string | null;
+  lifecycle_metadata?: Record<string, unknown>;
 
   created_at: string;
   updated_at: string;
@@ -162,6 +175,42 @@ export interface Winner {
   updated_at: string;
 }
 
+export interface PaymentWebhookEvent {
+  id: string;
+  provider: string;
+  provider_event_id: string;
+  event_type: string;
+  event_created_at: string;
+  received_at: string;
+  signature_sha256: string;
+  payload: Record<string, unknown>;
+  status: 'received' | 'queued' | 'processing' | 'processed' | 'ignored' | 'failed';
+  processing_attempts: number;
+  locked_at: string | null;
+  processed_at: string | null;
+  last_error: string | null;
+  reconciliation_id: string | null;
+  metadata: Record<string, unknown>;
+  updated_at: string;
+}
+
+export interface PaymentReconciliation {
+  id: string;
+  provider: string;
+  provider_payment_id: string | null;
+  provider_order_id: string | null;
+  provider_subscription_id: string | null;
+  provider_event_id: string;
+  subscription_id: string | null;
+  user_id: string | null;
+  status: 'paid' | 'failed' | 'refunded' | 'ignored';
+  amount: number | null;
+  currency: string | null;
+  reconciled_at: string;
+  raw_payload: Record<string, unknown>;
+  metadata: Record<string, unknown>;
+}
+
 // ---------------------------------------------------------------------------
 // SUPABASE DATABASE TYPE MAP
 // Used with: createClient<Database>(url, key)
@@ -213,6 +262,16 @@ export interface Database {
         Insert: Omit<Winner, 'id' | 'created_at' | 'updated_at'>;
         Update: Partial<Omit<Winner, 'id' | 'draw_id' | 'user_id' | 'created_at' | 'updated_at'>>;
       };
+      payment_webhook_events: {
+        Row: PaymentWebhookEvent;
+        Insert: Omit<PaymentWebhookEvent, 'id' | 'received_at' | 'updated_at'>;
+        Update: Partial<Omit<PaymentWebhookEvent, 'id' | 'provider' | 'provider_event_id' | 'received_at' | 'updated_at'>>;
+      };
+      payment_reconciliations: {
+        Row: PaymentReconciliation;
+        Insert: Omit<PaymentReconciliation, 'id' | 'reconciled_at'>;
+        Update: Partial<Omit<PaymentReconciliation, 'id' | 'provider' | 'provider_event_id' | 'reconciled_at'>>;
+      };
     };
     Functions: {
       calculate_prize_pool: {
@@ -235,6 +294,10 @@ export interface Database {
       is_admin: {
         Args: Record<never, never>;
         Returns: boolean;
+      };
+      claim_payment_webhook_event: {
+        Args: { p_event_id: string };
+        Returns: PaymentWebhookEvent | null;
       };
     };
     Enums: {
