@@ -5,14 +5,25 @@ type CacheEntry<T> = {
 
 const cache = new Map<string, CacheEntry<unknown>>();
 
+export type CacheOptions = {
+  refresh?: boolean;
+};
+
+export type CacheStore = {
+  get<T>(key: string): Promise<T | undefined> | T | undefined;
+  set<T>(key: string, value: T, ttlMs: number): Promise<void> | void;
+  delete(prefix?: string): Promise<void> | void;
+};
+
 export async function getCached<T>(
   key: string,
   ttlMs: number,
-  loader: () => Promise<T>
+  loader: () => Promise<T>,
+  options: CacheOptions = {}
 ) {
   const now = Date.now();
   const existing = cache.get(key) as CacheEntry<T> | undefined;
-  if (existing && existing.expiresAt > now) return existing.value;
+  if (!options.refresh && existing && existing.expiresAt > now) return existing.value;
 
   const value = await loader();
   cache.set(key, { value, expiresAt: now + ttlMs });

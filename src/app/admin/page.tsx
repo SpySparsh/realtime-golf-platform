@@ -1,7 +1,14 @@
 import Link from "next/link";
+import type { ReactNode } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { formatPence } from "@/lib/utils";
 import { createAnalyticsService } from "@/modules/analytics.module";
+import type {
+  ChartCountPoint,
+  ChartValuePoint,
+  LeaderboardActivityPoint,
+  UserGrowthPoint,
+} from "@/services/analytics.service";
 import {
   Activity,
   ArrowDownRight,
@@ -20,6 +27,27 @@ type PageProps = {
     to?: string;
     page?: string;
   }>;
+};
+
+type ChartRow = {
+  label: string;
+  primary: number;
+  primaryLabel: string;
+  secondaryLabel: string;
+};
+
+type StatCardProps = {
+  icon: ReactNode;
+  title: string;
+  value: string;
+  subtitle: string;
+  trend: "up" | "down";
+};
+
+type ChartPanelProps = {
+  title: string;
+  icon: ReactNode;
+  rows: ChartRow[];
 };
 
 export default async function AdminAnalyticsPage({ searchParams }: PageProps) {
@@ -103,7 +131,7 @@ export default async function AdminAnalyticsPage({ searchParams }: PageProps) {
         <ChartPanel
           title="Revenue And Subscriptions"
           icon={<LineChart className="w-4 h-4 text-emerald-400" />}
-          rows={dashboard.charts.mrr.map((point: any, index: number) => ({
+          rows={dashboard.charts.mrr.map((point: ChartValuePoint, index: number) => ({
             label: point.month,
             primary: point.value,
             primaryLabel: formatPence(point.value),
@@ -113,7 +141,7 @@ export default async function AdminAnalyticsPage({ searchParams }: PageProps) {
         <ChartPanel
           title="Payment Failure Trends"
           icon={<Activity className="w-4 h-4 text-rose-400" />}
-          rows={dashboard.charts.paymentFailures.map((point: any) => ({
+          rows={dashboard.charts.paymentFailures.map((point: ChartCountPoint) => ({
             label: point.month,
             primary: point.count,
             primaryLabel: `${point.count}`,
@@ -123,7 +151,7 @@ export default async function AdminAnalyticsPage({ searchParams }: PageProps) {
         <ChartPanel
           title="Leaderboard Activity"
           icon={<Target className="w-4 h-4 text-blue-400" />}
-          rows={dashboard.charts.leaderboardActivity.map((point: any) => ({
+          rows={dashboard.charts.leaderboardActivity.map((point: LeaderboardActivityPoint) => ({
             label: point.month,
             primary: point.count,
             primaryLabel: `${point.count} scores`,
@@ -133,7 +161,7 @@ export default async function AdminAnalyticsPage({ searchParams }: PageProps) {
         <ChartPanel
           title="User Growth And Retention"
           icon={<Users className="w-4 h-4 text-amber-400" />}
-          rows={dashboard.charts.userGrowth.map((point: any, index: number) => ({
+          rows={dashboard.charts.userGrowth.map((point: UserGrowthPoint, index: number) => ({
             label: point.month,
             primary: point.count,
             primaryLabel: `${point.count} users`,
@@ -170,7 +198,7 @@ export default async function AdminAnalyticsPage({ searchParams }: PageProps) {
               </tr>
             </thead>
             <tbody>
-              {activity.rows.map((row: any) => (
+              {activity.rows.map((row) => (
                 <tr key={row.id} className="border-b border-[#2a2d3d]/60 text-slate-300">
                   <td className="py-3 pr-4">{new Date(row.occurredAt).toLocaleDateString("en-GB")}</td>
                   <td className="py-3 pr-4 capitalize">{row.provider}</td>
@@ -210,7 +238,7 @@ export default async function AdminAnalyticsPage({ searchParams }: PageProps) {
   );
 }
 
-function StatCard({ icon, title, value, subtitle, trend }: any) {
+function StatCard({ icon, title, value, subtitle, trend }: StatCardProps) {
   const TrendIcon = trend === "down" ? ArrowDownRight : ArrowUpRight;
   return (
     <div className="card p-5">
@@ -225,8 +253,8 @@ function StatCard({ icon, title, value, subtitle, trend }: any) {
   );
 }
 
-function ChartPanel({ title, icon, rows }: any) {
-  const max = Math.max(...rows.map((row: any) => Number(row.primary)), 1);
+function ChartPanel({ title, icon, rows }: ChartPanelProps) {
+  const max = Math.max(...rows.map((row) => Number(row.primary)), 1);
   return (
     <section className="card p-6">
       <div className="flex items-center gap-2 mb-5">
@@ -234,7 +262,7 @@ function ChartPanel({ title, icon, rows }: any) {
         <h2 className="text-lg font-semibold text-white">{title}</h2>
       </div>
       <div className="space-y-3">
-        {rows.map((row: any) => (
+        {rows.map((row) => (
           <div key={row.label} className="grid grid-cols-[72px_1fr_120px] items-center gap-3">
             <span className="text-xs text-slate-500">{row.label}</span>
             <div className="h-2 rounded-full bg-[#252938] overflow-hidden">

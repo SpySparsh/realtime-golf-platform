@@ -3,10 +3,73 @@ export type AnalyticsDateRange = {
   to: string;
 };
 
+export type AnalyticsProfileRow = {
+  id: string;
+  created_at: string;
+};
+
+export type AnalyticsSubscriptionRow = {
+  id: string;
+  user_id: string;
+  plan: "monthly" | "yearly" | string;
+  status: string;
+  amount_pence: number | null;
+  created_at: string;
+  current_period_start: string | null;
+  current_period_end: string | null;
+  cancelled_at: string | null;
+  last_payment_failed_at: string | null;
+  payment_retry_count: number | null;
+};
+
+export type AnalyticsPaymentRow = {
+  id: string;
+  status: "paid" | "failed" | "refunded" | "ignored" | string;
+  amount: number | null;
+  currency: string | null;
+  provider: string;
+  provider_event_id: string;
+  provider_payment_id?: string | null;
+  user_id: string | null;
+  subscription_id: string | null;
+  reconciled_at: string;
+};
+
+export type AnalyticsScoreRow = {
+  id: string;
+  user_id: string;
+  created_at: string;
+  played_on: string;
+};
+
+export type AnalyticsDrawEntryRow = {
+  id: string;
+  draw_id: string;
+  user_id: string;
+  created_at: string;
+};
+
+export type AnalyticsDrawRow = {
+  id: string;
+  draw_month: string;
+  status: string;
+  created_at: string;
+  published_at: string | null;
+};
+
+export type AnalyticsOverviewInputs = {
+  profiles: AnalyticsProfileRow[];
+  subscriptions: AnalyticsSubscriptionRow[];
+  payments: AnalyticsPaymentRow[];
+  scores: AnalyticsScoreRow[];
+  drawEntries: AnalyticsDrawEntryRow[];
+  draws: AnalyticsDrawRow[];
+};
+
 export class AnalyticsRepository {
   constructor(private readonly supabase: any) {}
 
-  async fetchOverviewInputs(range: AnalyticsDateRange) {
+  async fetchOverviewInputs(range: AnalyticsDateRange): Promise<AnalyticsOverviewInputs> {
     const [
       profiles,
       subscriptions,
@@ -51,12 +114,12 @@ export class AnalyticsRepository {
     }
 
     return {
-      profiles: profiles.data ?? [],
-      subscriptions: subscriptions.data ?? [],
-      payments: payments.data ?? [],
-      scores: scores.data ?? [],
-      drawEntries: drawEntries.data ?? [],
-      draws: draws.data ?? [],
+      profiles: (profiles.data ?? []) as AnalyticsProfileRow[],
+      subscriptions: (subscriptions.data ?? []) as AnalyticsSubscriptionRow[],
+      payments: (payments.data ?? []) as AnalyticsPaymentRow[],
+      scores: (scores.data ?? []) as AnalyticsScoreRow[],
+      drawEntries: (drawEntries.data ?? []) as AnalyticsDrawEntryRow[],
+      draws: (draws.data ?? []) as AnalyticsDrawRow[],
     };
   }
 
@@ -78,7 +141,7 @@ export class AnalyticsRepository {
     if (result.error) throw result.error;
 
     return {
-      rows: result.data ?? [],
+      rows: (result.data ?? []) as AnalyticsPaymentRow[],
       total: result.count ?? 0,
     };
   }

@@ -12,6 +12,7 @@ export const GET = withApiHandler(async (request: NextRequest) => {
   const dashboard = await analytics.getDashboard({
     from: request.nextUrl.searchParams.get("from"),
     to: request.nextUrl.searchParams.get("to"),
+    refresh: request.nextUrl.searchParams.get("refresh") === "true",
   });
 
   return ok(dashboard, {

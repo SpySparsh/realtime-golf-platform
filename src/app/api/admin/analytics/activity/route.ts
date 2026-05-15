@@ -14,6 +14,7 @@ export const GET = withApiHandler(async (request: NextRequest) => {
     to: request.nextUrl.searchParams.get("to"),
     page: Number(request.nextUrl.searchParams.get("page") ?? 1),
     pageSize: Number(request.nextUrl.searchParams.get("pageSize") ?? 25),
+    refresh: request.nextUrl.searchParams.get("refresh") === "true",
   });
 
   return ok(activity, {
