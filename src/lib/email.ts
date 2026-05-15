@@ -1,7 +1,5 @@
 import { Resend } from "resend";
 
-export const resend = new Resend(process.env.RESEND_API_KEY!);
-
 export const FROM_EMAIL = "Golf Charity Platform <noreply@golfcharity.co.uk>";
 
 export type EmailPayload =
@@ -11,6 +9,13 @@ export type EmailPayload =
 
 export async function sendEmail(payload: EmailPayload): Promise<void> {
   try {
+    if (!process.env.RESEND_API_KEY) {
+      console.warn("[sendEmail] RESEND_API_KEY missing - skipping email send");
+      return;
+    }
+
+    const resend = new Resend(process.env.RESEND_API_KEY);
+
     if (payload.type === "winner_alert") {
       await resend.emails.send({
         from: FROM_EMAIL,

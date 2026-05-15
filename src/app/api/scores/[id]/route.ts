@@ -1,56 +1,29 @@
-import { createClient } from "@/lib/supabase/server";
-import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { getAuthenticatedContext } from "@/middlewares/auth";
+import { withApiHandler } from "@/middlewares/api-handler";
+import { createScoresService } from "@/modules/scores.module";
+import { ok } from "@/utils/api-response";
+import { validateUpdateScoreInput } from "@/validators/scores.validator";
 
-export async function PATCH(
+export const PATCH = withApiHandler(async (
   request: NextRequest,
   props: { params: Promise<{ id: string }> }
-) {
+) => {
   const { id } = await props.params;
-  // @ts-ignore - Bypass Supabase local schema typings mismatch
-  const supabase: any = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const { supabase, user } = await getAuthenticatedContext();
+  const input = validateUpdateScoreInput(await request.json());
+  const scoresService = createScoresService(supabase);
+  const score = await scoresService.updateUserScore(id, user.id, input);
+  return ok(score);
+});
 
-  const body = await request.json();
-  const { score, played_on, notes } = body as {
-    score?: number;
-    played_on?: string;
-    notes?: string;
-  };
-
-  if (score !== undefined && (score < 1 || score > 45)) {
-    return NextResponse.json({ error: "Score must be between 1 and 45" }, { status: 400 });
-  }
-
-  const { data, error } = await supabase
-    .from("scores")
-    .update({ score, played_on, notes })
-    .eq("id", id)
-    .eq("user_id", user.id) // Prevent editing other users' scores
-    .select()
-    .single();
-
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json(data);
-}
-
-export async function DELETE(
+export const DELETE = withApiHandler(async (
   _request: NextRequest,
   props: { params: Promise<{ id: string }> }
-) {
+) => {
   const { id } = await props.params;
-  // @ts-ignore - Bypass Supabase local schema typings mismatch
-  const supabase: any = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-  const { error } = await supabase
-    .from("scores")
-    .delete()
-    .eq("id", id)
-    .eq("user_id", user.id);
-
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json({ success: true });
-}
+  const { supabase, user } = await getAuthenticatedContext();
+  const scoresService = createScoresService(supabase);
+  const result = await scoresService.deleteUserScore(id, user.id);
+  return ok(result);
+});
