@@ -17,6 +17,7 @@ type Env = {
   serviceName: string;
   logLevel: string;
   workerMetricsPort: number;
+  mongoUri?: string;
 };
 
 function readEnv(): Env {
@@ -41,6 +42,7 @@ function readEnv(): Env {
     serviceName: process.env.SERVICE_NAME ?? "golf-charity-platform",
     logLevel: process.env.LOG_LEVEL ?? "info",
     workerMetricsPort: Number(process.env.WORKER_METRICS_PORT ?? 9101),
+    mongoUri: process.env.MONGODB_URI,
   };
 }
 
