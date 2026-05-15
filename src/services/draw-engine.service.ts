@@ -1,4 +1,6 @@
 import { env } from "@/infrastructure/config/env";
+import { logger } from "@/observability/logger";
+import { enqueueEmailNotification } from "@/queues/email.queue";
 import { DrawEntriesRepository } from "@/repositories/draw-entries.repository";
 import { DrawsRepository } from "@/repositories/draws.repository";
 import { ScoreSnapshotsRepository } from "@/repositories/score-snapshots.repository";
@@ -198,10 +200,7 @@ export class DrawEngineService {
         const profile = winnerProfiles.find((candidate: any) => candidate.id === winner.user_id);
         if (!profile?.email) continue;
 
-        fetch(`${env.appUrl}/api/emails/send`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
+        const emailPayload = {
             to: profile.email,
             subject: `You won the ${drawMonth} Draw!`,
             html: `
@@ -213,8 +212,22 @@ export class DrawEngineService {
               <p>Log into your dashboard to upload your golf score proof to claim your prize.</p>
               <a href="${env.appUrl}/dashboard/draws">Claim Your Prize</a>
             `,
-          }),
-        }).catch((error) => console.error("Email API failed:", error));
+            metadata: {
+              idempotencyKey: `winner:${drawMonth}:${winner.user_id}:${winner.match_tier}`,
+              drawMonth,
+              userId: winner.user_id,
+            },
+          };
+
+        if (env.redisUrl) {
+          await enqueueEmailNotification(emailPayload);
+        } else {
+          fetch(`${env.appUrl}/api/emails/send`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(emailPayload),
+          }).catch((error) => logger.error("email.fallback.failed", { error: error.message }));
+        }
       }
     } catch (error) {
       console.error("Winner email loop error:", error);

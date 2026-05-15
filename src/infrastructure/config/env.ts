@@ -6,6 +6,8 @@ type Env = {
   stripeSecretKey?: string;
   stripeWebhookSecret?: string;
   resendApiKey?: string;
+  redisUrl?: string;
+  queueWorkerConcurrency: number;
 };
 
 function readEnv(): Env {
@@ -17,6 +19,8 @@ function readEnv(): Env {
     stripeSecretKey: process.env.STRIPE_SECRET_KEY,
     stripeWebhookSecret: process.env.STRIPE_WEBHOOK_SECRET,
     resendApiKey: process.env.RESEND_API_KEY,
+    redisUrl: process.env.REDIS_URL,
+    queueWorkerConcurrency: Number(process.env.QUEUE_WORKER_CONCURRENCY ?? 5),
   };
 }
 
@@ -29,4 +33,3 @@ export function requireEnv<K extends keyof Env>(key: K): NonNullable<Env[K]> {
   }
   return value as NonNullable<Env[K]>;
 }
-
