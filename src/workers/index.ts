@@ -21,6 +21,10 @@ import type {
   SubscriptionRenewalJobData,
 } from "@/queues/subscription.queue";
 import { logger } from "@/observability/logger";
+import { env } from "@/infrastructure/config/env";
+import { startObservabilityHttpServer } from "@/observability/http-server";
+import { queueWaitingJobs } from "@/observability/metrics";
+import { getQueue } from "@/queues/queue-factory";
 
 const workers = [
   createWorker<EmailJobData>(QUEUE_NAMES.email, processEmailJob),
@@ -35,11 +39,23 @@ const workers = [
   createWorker<DeadLetterJobData>(QUEUE_NAMES.deadLetter, processDeadLetterJob),
 ];
 
+const closeObservabilityServer = startObservabilityHttpServer(env.workerMetricsPort, "worker");
+const queueMetricsInterval = setInterval(async () => {
+  await Promise.all(
+    Object.values(QUEUE_NAMES).map(async (queueName) => {
+      const counts = await getQueue(queueName).getJobCounts("waiting", "delayed");
+      queueWaitingJobs.set({ queue: queueName }, (counts.waiting ?? 0) + (counts.delayed ?? 0));
+    })
+  );
+}, 15_000);
+
 logger.info("workers.started", { count: workers.length });
 
 async function shutdown() {
   logger.info("workers.shutdown");
+  clearInterval(queueMetricsInterval);
   await Promise.all(workers.map((worker) => worker.close()));
+  await closeObservabilityServer();
   process.exit(0);
 }
 

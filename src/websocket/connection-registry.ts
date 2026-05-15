@@ -1,6 +1,11 @@
 import type { Server, Socket } from "socket.io";
 import { getRedisConnection } from "@/infrastructure/redis/redis.client";
 import { logger } from "@/observability/logger";
+import {
+  websocketConnections,
+  websocketEventsTotal,
+  websocketRooms,
+} from "@/observability/metrics";
 import type { SocketUser } from "@/websocket/events";
 import { socketRooms } from "@/websocket/rooms";
 
@@ -22,6 +27,9 @@ export class SocketConnectionRegistry {
     }
 
     await this.persistConnection(socket, user);
+    websocketConnections.inc({ transport: socket.conn.transport.name });
+    websocketEventsTotal.inc({ event: "connection", direction: "inbound", status: "ok" });
+    this.updateRoomGauge();
     logger.info("socket.connected", {
       socketId: socket.id,
       userId: user.id,
@@ -33,23 +41,31 @@ export class SocketConnectionRegistry {
     await socket.join(room);
     await this.trackRoom(socket, room);
     await this.persistConnection(socket, socket.data.user);
+    websocketEventsTotal.inc({ event: "room.join", direction: "inbound", status: "ok" });
+    this.updateRoomGauge();
   }
 
   async leave(socket: Socket, room: string) {
     await socket.leave(room);
     socket.data.joinedRooms?.delete(room);
     await getRedisConnection().srem(this.roomsKey(socket.id), room);
+    websocketEventsTotal.inc({ event: "room.leave", direction: "inbound", status: "ok" });
+    this.updateRoomGauge();
   }
 
   async touch(socket: Socket) {
     socket.data.lastPongAt = Date.now();
     await getRedisConnection().expire(this.connectionKey(socket.id), CONNECTION_TTL_SECONDS);
+    websocketEventsTotal.inc({ event: "heartbeat.pong", direction: "inbound", status: "ok" });
   }
 
   async cleanup(socket: Socket, reason: string) {
     const redis = getRedisConnection();
     await redis.del(this.connectionKey(socket.id));
     await redis.del(this.roomsKey(socket.id));
+    websocketConnections.dec({ transport: socket.conn.transport.name });
+    websocketEventsTotal.inc({ event: "disconnect", direction: "inbound", status: "ok" });
+    this.updateRoomGauge();
     logger.info("socket.disconnected", {
       socketId: socket.id,
       userId: socket.data.user?.id,
@@ -100,5 +116,9 @@ export class SocketConnectionRegistry {
 
   private roomsKey(socketId: string) {
     return `socket:rooms:${socketId}`;
+  }
+
+  private updateRoomGauge() {
+    websocketRooms.set(this.io.sockets.adapter.rooms.size);
   }
 }

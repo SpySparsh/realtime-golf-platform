@@ -14,6 +14,9 @@ type Env = {
   websocketCorsOrigin: string;
   websocketPingIntervalMs: number;
   websocketPingTimeoutMs: number;
+  serviceName: string;
+  logLevel: string;
+  workerMetricsPort: number;
 };
 
 function readEnv(): Env {
@@ -35,6 +38,9 @@ function readEnv(): Env {
     websocketCorsOrigin: process.env.WEBSOCKET_CORS_ORIGIN ?? process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000",
     websocketPingIntervalMs: Number(process.env.WEBSOCKET_PING_INTERVAL_MS ?? 25_000),
     websocketPingTimeoutMs: Number(process.env.WEBSOCKET_PING_TIMEOUT_MS ?? 20_000),
+    serviceName: process.env.SERVICE_NAME ?? "golf-charity-platform",
+    logLevel: process.env.LOG_LEVEL ?? "info",
+    workerMetricsPort: Number(process.env.WORKER_METRICS_PORT ?? 9101),
   };
 }
 

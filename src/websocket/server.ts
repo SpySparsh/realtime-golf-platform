@@ -4,6 +4,12 @@ import IORedis from "ioredis";
 import { Server, type Socket } from "socket.io";
 import { env, requireEnv } from "@/infrastructure/config/env";
 import { logger } from "@/observability/logger";
+import {
+  errorsTotal,
+  metricsContentType,
+  renderMetrics,
+  websocketEventsTotal,
+} from "@/observability/metrics";
 import { authenticateSocket } from "@/websocket/auth";
 import { SocketConnectionRegistry } from "@/websocket/connection-registry";
 import {
@@ -21,7 +27,24 @@ export type SocketServerRuntime = {
 };
 
 export async function createSocketServer(): Promise<SocketServerRuntime> {
-  const httpServer = createServer();
+  const httpServer = createServer(async (request, response) => {
+    if (request.url?.startsWith("/socket.io/")) return;
+
+    if (request.url === "/health") {
+      response.writeHead(200, { "content-type": "application/json" });
+      response.end(JSON.stringify({ status: "ok", timestamp: new Date().toISOString() }));
+      return;
+    }
+
+    if (request.url === "/metrics") {
+      response.writeHead(200, { "content-type": metricsContentType() });
+      response.end(await renderMetrics());
+      return;
+    }
+
+    response.writeHead(404, { "content-type": "application/json" });
+    response.end(JSON.stringify({ error: "Not found" }));
+  });
   const io = new Server(httpServer, {
     cors: {
       origin: env.websocketCorsOrigin,
@@ -49,6 +72,8 @@ export async function createSocketServer(): Promise<SocketServerRuntime> {
       socket.data.user = await authenticateSocket(socket);
       next();
     } catch (error) {
+      errorsTotal.inc({ source: "websocket", code: "AUTH_FAILED" });
+      websocketEventsTotal.inc({ event: "connection", direction: "inbound", status: "auth_failed" });
       next(error instanceof Error ? error : new Error("Socket authentication failed"));
     }
   });
@@ -136,9 +161,9 @@ function bindSocketHandlers(socket: Socket, registry: SocketConnectionRegistry) 
 }
 
 function parseBroadcast(message: string): SocketBroadcastEvent | null {
-  try {
-    const parsed = JSON.parse(message) as SocketBroadcastEvent;
-    if (!parsed.event || !parsed.payload) return null;
+    try {
+      const parsed = JSON.parse(message) as SocketBroadcastEvent;
+      if (!parsed.event || !parsed.payload) return null;
     return parsed;
   } catch (error) {
     logger.warn("socket.broadcast.invalid_payload", {
@@ -156,13 +181,16 @@ function broadcast(io: Server, event: SocketBroadcastEvent) {
 
   if (event.userId) {
     io.to(socketRooms.user(event.userId)).emit(event.event, payload);
+    websocketEventsTotal.inc({ event: event.event, direction: "outbound", status: "ok" });
     return;
   }
 
   if (event.room) {
     io.to(event.room).emit(event.event, payload);
+    websocketEventsTotal.inc({ event: event.event, direction: "outbound", status: "ok" });
     return;
   }
 
   io.emit(event.event, payload);
+  websocketEventsTotal.inc({ event: event.event, direction: "outbound", status: "ok" });
 }
