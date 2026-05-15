@@ -8,7 +8,8 @@
     "start": "next start",
     "socket": "tsx src/websocket/index.ts",
     "worker": "tsx src/workers/index.ts",
-    "lint": "next lint",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit --pretty false --incremental false",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:ci": "jest --ci --runInBand --coverage"
