@@ -2,14 +2,9 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
 import { Eye, EyeOff, Loader2, CheckCircle } from "lucide-react";
 
 export default function RegisterPage() {
-  const router = useRouter();
-  const supabase = createClient();
-
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -23,17 +18,15 @@ export default function RegisterPage() {
     setLoading(true);
     setError(null);
 
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: { full_name: fullName },
-        emailRedirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback`,
-      },
+    const res = await fetch("/api/auth/register", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ fullName, email, password }),
     });
 
-    if (error) {
-      setError(error.message);
+    const data = await res.json();
+    if (!res.ok) {
+      setError(data.error ?? "Unable to create account");
       setLoading(false);
       return;
     }

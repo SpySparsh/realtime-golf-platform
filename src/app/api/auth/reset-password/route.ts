@@ -1,19 +1,20 @@
 import type { NextRequest } from "next/server";
-import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { withApiHandler } from "@/middlewares/api-handler";
 import { createAuthService } from "@/modules/auth.module";
+import { ok } from "@/utils/api-response";
 import { getClientIp, getUserAgent } from "@/utils/security";
+import { validateResetPasswordInput } from "@/validators/auth.validator";
 
-export async function POST(request: NextRequest) {
+export const POST = withApiHandler(async (request: NextRequest) => {
   const supabase = await createClient();
+  const input = validateResetPasswordInput(await request.json());
   const authService = createAuthService(supabase);
-  await authService.logout({
+  const result = await authService.resetPassword(input, {
     ipAddress: getClientIp(request),
     userAgent: getUserAgent(request),
   });
 
-  return NextResponse.redirect(
-    new URL("/", process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000")
-  );
-}
+  return ok(result);
+});
 

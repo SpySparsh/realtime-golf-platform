@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { ZodError } from "zod";
 import { AppError } from "@/utils/app-error";
 
 export function ok<T>(data: T, init?: ResponseInit) {
@@ -21,6 +22,17 @@ export function errorResponse(error: unknown) {
     );
   }
 
+  if (error instanceof ZodError) {
+    return NextResponse.json(
+      {
+        error: "Validation failed",
+        code: "VALIDATION_ERROR",
+        details: error.flatten(),
+      },
+      { status: 400 }
+    );
+  }
+
   const message = error instanceof Error ? error.message : "Unexpected server error";
   console.error("[api:error]", error);
   return NextResponse.json(
@@ -28,4 +40,3 @@ export function errorResponse(error: unknown) {
     { status: 500 }
   );
 }
-
