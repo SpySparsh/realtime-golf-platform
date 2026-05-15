@@ -6,10 +6,12 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
+    "socket": "tsx src/websocket/index.ts",
     "worker": "tsx src/workers/index.ts",
     "lint": "next lint"
   },
   "dependencies": {
+    "@socket.io/redis-adapter": "^8.3.0",
     "@supabase/ssr": "^0.6.1",
     "@supabase/supabase-js": "^2.49.4",
     "bullmq": "^5.76.8",
@@ -21,6 +23,7 @@
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "resend": "^4.2.0",
+    "socket.io": "^4.8.3",
     "stripe": "^17.7.0",
     "tailwind-merge": "^2.6.0",
     "zod": "^4.4.3"

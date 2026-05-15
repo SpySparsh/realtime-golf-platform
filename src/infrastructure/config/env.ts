@@ -10,6 +10,10 @@ type Env = {
   resendApiKey?: string;
   redisUrl?: string;
   queueWorkerConcurrency: number;
+  websocketPort: number;
+  websocketCorsOrigin: string;
+  websocketPingIntervalMs: number;
+  websocketPingTimeoutMs: number;
 };
 
 function readEnv(): Env {
@@ -27,6 +31,10 @@ function readEnv(): Env {
     resendApiKey: process.env.RESEND_API_KEY,
     redisUrl: process.env.REDIS_URL,
     queueWorkerConcurrency: Number(process.env.QUEUE_WORKER_CONCURRENCY ?? 5),
+    websocketPort: Number(process.env.WEBSOCKET_PORT ?? 3001),
+    websocketCorsOrigin: process.env.WEBSOCKET_CORS_ORIGIN ?? process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000",
+    websocketPingIntervalMs: Number(process.env.WEBSOCKET_PING_INTERVAL_MS ?? 25_000),
+    websocketPingTimeoutMs: Number(process.env.WEBSOCKET_PING_TIMEOUT_MS ?? 20_000),
   };
 }
 
