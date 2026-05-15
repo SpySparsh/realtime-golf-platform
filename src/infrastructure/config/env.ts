@@ -18,6 +18,7 @@ type Env = {
   logLevel: string;
   workerMetricsPort: number;
   mongoUri?: string;
+  csrfSecret?: string;
 };
 
 function readEnv(): Env {
@@ -43,6 +44,7 @@ function readEnv(): Env {
     logLevel: process.env.LOG_LEVEL ?? "info",
     workerMetricsPort: Number(process.env.WORKER_METRICS_PORT ?? 9101),
     mongoUri: process.env.MONGODB_URI,
+    csrfSecret: process.env.CSRF_SECRET,
   };
 }
 

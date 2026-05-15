@@ -1,5 +1,7 @@
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { createCsrfToken, CSRF_COOKIE_NAME } from "@/security/csrf";
+import { applySecurityHeaders } from "@/security/headers";
 
 // This was formerly `middleware.ts`. Next.js renamed the file convention
 // to `proxy.ts` and the export to `proxy`. See:
@@ -27,6 +29,7 @@ export async function proxy(request: NextRequest) {
               ...options,
               httpOnly: true,
               sameSite: "lax",
+              path: "/",
               secure: process.env.NODE_ENV === "production",
             })
           );
@@ -53,17 +56,26 @@ export async function proxy(request: NextRequest) {
     const loginUrl = request.nextUrl.clone();
     loginUrl.pathname = "/auth/login";
     loginUrl.searchParams.set("redirectTo", pathname);
-    return NextResponse.redirect(loginUrl);
+    return applySecurityHeaders(NextResponse.redirect(loginUrl));
   }
 
   // ── Auth page redirect ────────────────────────────────────────────────────
   // Redirect already logged-in users away from login/register pages
   const authPaths = ["/auth/login", "/auth/register"];
   if (user && authPaths.some((p) => pathname.startsWith(p))) {
-    return NextResponse.redirect(new URL("/dashboard", request.url));
+    return applySecurityHeaders(NextResponse.redirect(new URL("/dashboard", request.url)));
   }
 
-  return supabaseResponse;
+  if (!request.cookies.get(CSRF_COOKIE_NAME)) {
+    supabaseResponse.cookies.set(CSRF_COOKIE_NAME, createCsrfToken(), {
+      httpOnly: false,
+      sameSite: "strict",
+      secure: process.env.NODE_ENV === "production",
+      path: "/",
+    });
+  }
+
+  return applySecurityHeaders(supabaseResponse);
 }
 
 export const config = {

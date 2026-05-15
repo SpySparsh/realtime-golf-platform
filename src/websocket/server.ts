@@ -10,6 +10,8 @@ import {
   renderMetrics,
   websocketEventsTotal,
 } from "@/observability/metrics";
+import { applyHelmet } from "@/security/helmet";
+import { securityHeaders } from "@/security/headers";
 import { authenticateSocket } from "@/websocket/auth";
 import { SocketConnectionRegistry } from "@/websocket/connection-registry";
 import {
@@ -29,6 +31,10 @@ export type SocketServerRuntime = {
 export async function createSocketServer(): Promise<SocketServerRuntime> {
   const httpServer = createServer(async (request, response) => {
     if (request.url?.startsWith("/socket.io/")) return;
+    await applyHelmet(request, response);
+    for (const [name, value] of Object.entries(securityHeaders)) {
+      response.setHeader(name, value);
+    }
 
     if (request.url === "/health") {
       response.writeHead(200, { "content-type": "application/json" });

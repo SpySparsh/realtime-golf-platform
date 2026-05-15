@@ -28,3 +28,12 @@ export function enforceRateLimit(
   }
 }
 
+export function rateLimitHeaders(key: string) {
+  const bucket = buckets.get(key);
+  if (!bucket) return {};
+
+  return {
+    "X-RateLimit-Reset": String(Math.ceil(bucket.resetAt / 1000)),
+    "Retry-After": String(Math.max(Math.ceil((bucket.resetAt - Date.now()) / 1000), 0)),
+  };
+}

@@ -24,6 +24,7 @@ export async function createClient() {
                 ...options,
                 httpOnly: true,
                 sameSite: "lax",
+                path: "/",
                 secure: process.env.NODE_ENV === "production",
               })
             );

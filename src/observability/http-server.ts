@@ -1,9 +1,16 @@
 import { createServer, type Server } from "http";
 import { logger } from "@/observability/logger";
 import { metricsContentType, renderMetrics } from "@/observability/metrics";
+import { applyHelmet } from "@/security/helmet";
+import { securityHeaders } from "@/security/headers";
 
 export function startObservabilityHttpServer(port: number, name: string) {
   const server = createServer(async (request, response) => {
+    await applyHelmet(request, response);
+    for (const [header, value] of Object.entries(securityHeaders)) {
+      response.setHeader(header, value);
+    }
+
     if (request.url === "/health") {
       response.writeHead(200, { "content-type": "application/json" });
       response.end(JSON.stringify({ status: "ok", name, timestamp: new Date().toISOString() }));

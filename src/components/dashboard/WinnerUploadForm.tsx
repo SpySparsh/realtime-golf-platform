@@ -4,6 +4,7 @@ import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { Loader2, UploadCloud, CheckCircle, AlertCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { safeUploadExtension, validateWinnerProofFile } from "@/security/upload-validation";
 
 export default function WinnerUploadForm({ winnerId }: { winnerId: string }) {
   const [file, setFile] = useState<File | null>(null);
@@ -22,15 +23,16 @@ export default function WinnerUploadForm({ winnerId }: { winnerId: string }) {
     setError(null);
 
     try {
+      validateWinnerProofFile(file);
       // 1. Get user
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
 
       // 2. Upload file to Supabase Storage (bucket: 'proofs')
-      const fileExt = file.name.split(".").pop();
+      const fileExt = safeUploadExtension(file);
       const fileName = `${user.id}/${winnerId}-${Date.now()}.${fileExt}`;
 
-      const { error: uploadError, data } = await supabase.storage
+      const { error: uploadError } = await supabase.storage
         .from("proofs")
         .upload(fileName, file, { cacheControl: "3600", upsert: false });
 
@@ -86,7 +88,17 @@ export default function WinnerUploadForm({ winnerId }: { winnerId: string }) {
             type="file"
             accept="image/png, image/jpeg, image/webp"
             className="hidden"
-            onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+            onChange={(e) => {
+              const nextFile = e.target.files?.[0] ?? null;
+              try {
+                if (nextFile) validateWinnerProofFile(nextFile);
+                setError(null);
+                setFile(nextFile);
+              } catch (err: any) {
+                setFile(null);
+                setError(err.message ?? "Invalid upload.");
+              }
+            }}
           />
         </label>
         
