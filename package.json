@@ -8,7 +8,10 @@
     "start": "next start",
     "socket": "tsx src/websocket/index.ts",
     "worker": "tsx src/workers/index.ts",
-    "lint": "next lint"
+    "lint": "next lint",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:ci": "jest --ci --runInBand --coverage"
   },
   "dependencies": {
     "@socket.io/redis-adapter": "^8.3.0",
@@ -32,13 +35,20 @@
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
+    "@types/jest": "^30.0.0",
     "@types/node": "^20.19.37",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@types/supertest": "^7.2.0",
     "autoprefixer": "^10.4.27",
     "eslint": "^9",
     "eslint-config-next": "15.1.0",
+    "ioredis-mock": "^8.13.1",
+    "jest": "^30.4.2",
+    "jest-environment-node": "^30.4.1",
     "postcss": "^8.5.8",
+    "socket.io-client": "^4.8.3",
+    "supertest": "^7.2.2",
     "tailwindcss": "^3.4.19",
     "tsx": "^4.22.0",
     "typescript": "^5"
