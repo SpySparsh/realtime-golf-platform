@@ -1,17 +1,17 @@
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { formatPence } from "@/lib/utils";
 import { CreditCard, Search, ArrowRight } from "lucide-react";
 import Link from "next/link";
 
 export default async function AdminSubscriptionsPage() {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
 
   const { data: subscriptions } = await supabase
     .from("subscriptions")
     .select(`
       *,
-      profile:profiles(email, full_name),
-      charity:charities(name)
+      profile:profiles!subscriptions_user_id_fkey(email, full_name),
+      charity:charities!subscriptions_charity_id_fkey(name)
     `)
     .order("created_at", { ascending: false });
 

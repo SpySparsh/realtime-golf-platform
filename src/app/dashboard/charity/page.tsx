@@ -16,15 +16,23 @@ export default function CharityPage() {
 
   useEffect(() => {
     Promise.all([
-      fetch("/api/charities").then((r) => r.json()),
-      fetch("/api/subscription").then((r) => r.json()),
-    ]).then(([charityData, subData]) => {
-      setCharities(Array.isArray(charityData) ? charityData : []);
-      setSubscription(subData);
-      setSelectedCharityId(subData?.charity_id ?? null);
-      setCharityPercentage(subData?.charity_percentage ?? 10);
-      setLoading(false);
-    });
+      fetch("/api/charities"),
+      fetch("/api/subscription"),
+    ])
+      .then(async ([charityRes, subRes]) => {
+        const charityData = await charityRes.json();
+        const subData = await subRes.json();
+
+        if (!charityRes.ok) throw new Error(charityData.error ?? "Unable to load charities");
+        if (!subRes.ok) throw new Error(subData.error ?? "Unable to load subscription");
+
+        setCharities(Array.isArray(charityData) ? charityData : []);
+        setSubscription(subData);
+        setSelectedCharityId(subData?.charity_id ?? null);
+        setCharityPercentage(subData?.charity_percentage ?? 10);
+      })
+      .catch((err: any) => setError(err.message ?? "Unable to load charity preferences"))
+      .finally(() => setLoading(false));
   }, []);
 
   async function handleSave(e: React.FormEvent) {
@@ -43,7 +51,7 @@ export default function CharityPage() {
 
     if (!res.ok) {
       const err = await res.json();
-      setError(err.error ?? "Failed to save");
+      setError(err.error ?? "Failed to save charity preference");
       setSaving(false);
       return;
     }

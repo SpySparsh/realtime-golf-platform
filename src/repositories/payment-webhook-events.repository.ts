@@ -10,7 +10,7 @@ export class PaymentWebhookEventsRepository {
   constructor(private readonly supabase: any) {}
 
   async createReceived(event: {
-    provider: "razorpay";
+    provider: "razorpay" | "stripe";
     provider_event_id: string;
     event_type: string;
     event_created_at: string;

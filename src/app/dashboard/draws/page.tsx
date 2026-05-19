@@ -13,12 +13,12 @@ export default async function DrawsPage() {
   const [drawEntriesRes, winnersRes, drawsRes] = await Promise.all([
     supabase
       .from("draw_entries")
-      .select("*, draw:draws(*)")
+      .select("*, draw:draws!draw_entries_draw_id_fkey(*)")
       .eq("user_id", user.id)
       .order("created_at", { ascending: false }),
     supabase
       .from("winners")
-      .select("*, draw:draws(draw_month, drawn_numbers)")
+      .select("*, draw:draws!winners_draw_id_fkey(draw_month, drawn_numbers)")
       .eq("user_id", user.id)
       .order("created_at", { ascending: false }),
     supabase

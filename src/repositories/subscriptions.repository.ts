@@ -6,7 +6,7 @@ export class SubscriptionsRepository {
   async findByUserId(userId: string) {
     return this.supabase
       .from("subscriptions")
-      .select("*, charity:charities(*)")
+      .select("*, charity:charities!subscriptions_charity_id_fkey(*)")
       .eq("user_id", userId)
       .maybeSingle();
   }
@@ -69,7 +69,7 @@ export class SubscriptionsRepository {
       .from("subscriptions")
       .update(updatePayload)
       .eq("user_id", userId)
-      .select()
+      .select("*, charity:charities!subscriptions_charity_id_fkey(*)")
       .single();
   }
 

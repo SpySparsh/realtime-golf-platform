@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { formatPence } from "@/lib/utils";
 import { createAnalyticsService } from "@/modules/analytics.module";
 import type {
@@ -52,7 +52,7 @@ type ChartPanelProps = {
 
 export default async function AdminAnalyticsPage({ searchParams }: PageProps) {
   const params = (await searchParams) ?? {};
-  const supabase = await createClient();
+  const supabase = createAdminClient();
   const analytics = createAnalyticsService(supabase);
   const [dashboard, activity] = await Promise.all([
     analytics.getDashboard({ from: params.from, to: params.to }),

@@ -2,7 +2,7 @@ export class PaymentReconciliationsRepository {
   constructor(private readonly supabase: any) {}
 
   async record(event: {
-    provider: "razorpay";
+    provider: "razorpay" | "stripe";
     provider_payment_id?: string | null;
     provider_order_id?: string | null;
     provider_subscription_id?: string | null;

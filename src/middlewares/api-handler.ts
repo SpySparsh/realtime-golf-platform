@@ -36,7 +36,7 @@ export function withApiHandler<TArgs extends unknown[]>(handler: Handler<TArgs>)
       let statusCode = 500;
 
       try {
-        validateEnvironmentSecrets();
+        validateEnvironmentSecrets({ route });
         enforceRateLimit(`api:${getClientIp(request)}:${route}`, { limit: 300, windowMs: 5 * 60 * 1000 });
         assertCsrf(request);
 

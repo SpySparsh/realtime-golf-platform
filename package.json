@@ -12,7 +12,15 @@
     "typecheck": "tsc --noEmit --pretty false --incremental false",
     "test": "jest",
     "test:watch": "jest --watch",
-    "test:ci": "jest --ci --runInBand --coverage"
+    "test:ci": "jest --ci --runInBand --coverage",
+    "dev:all": "concurrently \"npm run dev\" \"npm run worker\" \"npm run socket\"",
+    "db:start": "supabase start",
+    "db:reset": "supabase db reset",
+    "db:migrate": "supabase migration up",
+    "db:seed": "tsx scripts/seed.ts",
+    "docker:up": "docker compose up --build",
+    "docker:down": "docker compose down",
+    "check": "npm run lint && npm run typecheck && npm run test:ci && npm run build"
   },
   "dependencies": {
     "@socket.io/redis-adapter": "^8.3.0",
@@ -21,6 +29,7 @@
     "bullmq": "^5.76.8",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
+    "dotenv": "^17.4.2",
     "helmet": "^8.1.0",
     "ioredis": "^5.10.1",
     "lucide-react": "^0.487.0",

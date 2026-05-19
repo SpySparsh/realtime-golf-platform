@@ -16,23 +16,46 @@ export default function Navbar() {
   useEffect(() => {
     // @ts-ignore - Bypass Supabase local schema typings mismatch
     const supabase: any = createClient();
-    supabase.auth.getUser().then(({ data }: any) => {
-      const u = data?.user ?? null;
+    let mounted = true;
+
+    async function loadUser() {
+      const { data } = await supabase.auth.getSession();
+      const u = data?.session?.user ?? null;
+      if (!mounted) return;
       setUser(u);
+      setIsAdmin(false);
       if (u) {
         supabase.from('profiles').select('is_admin').eq('id', u.id).single()
-          .then(({ data: profile }: any) => setIsAdmin(profile?.is_admin ?? false));
+          .then(({ data: profile }: any) => {
+            if (mounted) setIsAdmin(profile?.is_admin ?? false);
+          });
       }
+    }
+
+    loadUser();
+    const { data: listener } = supabase.auth.onAuthStateChange(() => {
+      loadUser();
     });
+
+    return () => {
+      mounted = false;
+      listener?.subscription?.unsubscribe();
+    };
   }, []);
 
   async function handleSignOut() {
-    // @ts-ignore - Bypass Supabase local schema typings mismatch
-    const supabase: any = createClient();
-    await supabase.auth.signOut();
-    setUser(null);
-    setIsAdmin(false);
-    window.location.href = "/";
+    try {
+      await fetch("/api/auth/signout", {
+        method: "POST",
+        credentials: "same-origin",
+      });
+    } finally {
+      const supabase: any = createClient();
+      await supabase.auth.signOut().catch(() => undefined);
+      setUser(null);
+      setIsAdmin(false);
+      window.location.assign("/");
+    }
   }
 
   // Don't show public navbar on dashboard pages

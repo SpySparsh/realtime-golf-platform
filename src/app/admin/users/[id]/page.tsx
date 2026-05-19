@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, User, CreditCard, Target, History } from "lucide-react";
@@ -7,13 +7,13 @@ import { formatPence } from "@/lib/utils";
 
 export default async function AdminUserProfilePage(props: { params: Promise<{ id: string }> }) {
   const { id } = await props.params;
-  const supabase = await createClient();
+  const supabase = createAdminClient();
 
   const [profileRes, subsRes, scoresRes, winnersRes] = await Promise.all([
     supabase.from("profiles").select("*").eq("id", id).single(),
-    supabase.from("subscriptions").select("*, charity:charities(name)").eq("user_id", id).maybeSingle(),
+    supabase.from("subscriptions").select("*, charity:charities!subscriptions_charity_id_fkey(name)").eq("user_id", id).maybeSingle(),
     supabase.from("scores").select("*").eq("user_id", id).order("played_on", { ascending: false }),
-    supabase.from("winners").select("*, draw:draws(draw_month)").eq("user_id", id).order("created_at", { ascending: false }),
+    supabase.from("winners").select("*, draw:draws!winners_draw_id_fkey(draw_month)").eq("user_id", id).order("created_at", { ascending: false }),
   ]);
 
   // @ts-ignore - Supabase type mismatch

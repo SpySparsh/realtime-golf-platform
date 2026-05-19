@@ -1,3 +1,4 @@
+import "dotenv/config";
 type Env = {
   appUrl: string;
   supabaseUrl: string;

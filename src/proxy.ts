@@ -27,10 +27,7 @@ export async function proxy(request: NextRequest) {
           cookiesToSet.forEach(({ name, value, options }) =>
             supabaseResponse.cookies.set(name, value, {
               ...options,
-              httpOnly: true,
-              sameSite: "lax",
               path: "/",
-              secure: process.env.NODE_ENV === "production",
             })
           );
         },
@@ -55,7 +52,8 @@ export async function proxy(request: NextRequest) {
   if (isProtected && !user) {
     const loginUrl = request.nextUrl.clone();
     loginUrl.pathname = "/auth/login";
-    loginUrl.searchParams.set("redirectTo", pathname);
+    loginUrl.search = "";
+    loginUrl.searchParams.set("redirectTo", `${pathname}${request.nextUrl.search}`);
     return applySecurityHeaders(NextResponse.redirect(loginUrl));
   }
 
@@ -63,7 +61,12 @@ export async function proxy(request: NextRequest) {
   // Redirect already logged-in users away from login/register pages
   const authPaths = ["/auth/login", "/auth/register"];
   if (user && authPaths.some((p) => pathname.startsWith(p))) {
-    return applySecurityHeaders(NextResponse.redirect(new URL("/dashboard", request.url)));
+    const redirectTo = request.nextUrl.searchParams.get("redirectTo");
+    const safeRedirect =
+      redirectTo && redirectTo.startsWith("/") && !redirectTo.startsWith("//") && !redirectTo.includes("://")
+        ? redirectTo
+        : "/dashboard";
+    return applySecurityHeaders(NextResponse.redirect(new URL(safeRedirect, request.url)));
   }
 
   if (!request.cookies.get(CSRF_COOKIE_NAME)) {

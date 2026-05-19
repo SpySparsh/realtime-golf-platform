@@ -1,8 +1,8 @@
 "use client";
 
-import { Suspense, useState, useEffect } from "react";
+import { Suspense, useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { Check, Loader2 } from "lucide-react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { Charity } from "@/types/database";
 
@@ -16,19 +16,25 @@ export default function PricingPage() {
 
 function PricingContent() {
   const [isYearly, setIsYearly] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [loadingPlan, setLoadingPlan] = useState<"monthly" | "yearly" | null>(null);
   const [charities, setCharities] = useState<Charity[]>([]);
   const [selectedCharity, setSelectedCharity] = useState<string>("");
+  const [error, setError] = useState<string | null>(null);
   const searchParams = useSearchParams();
   const preselectedCharity = searchParams.get("charity");
+  const checkoutPlan = searchParams.get("checkoutPlan");
+  const autoCheckoutStarted = useRef(false);
 
-  const router = useRouter();
   // @ts-ignore - Bypass Supabase local schema typings mismatch
-  const supabase: any = createClient();
+  const supabase: any = useMemo(() => createClient(), []);
 
   useEffect(() => {
     async function load() {
-      const { data } = await supabase.from("charities").select("id, name").eq("is_active", true);
+      const { data, error: loadError } = await supabase.from("charities").select("id, name").eq("is_active", true);
+      if (loadError) {
+        setError(loadError.message);
+        return;
+      }
       setCharities(data ?? []);
       if (preselectedCharity && data?.find((c: any) => c.id === preselectedCharity)) {
         setSelectedCharity(preselectedCharity);
@@ -39,13 +45,16 @@ function PricingContent() {
     load();
   }, [supabase, preselectedCharity]);
 
-  async function handleCheckout(plan: "monthly" | "yearly") {
-    setLoading(true);
+  const handleCheckout = useCallback(async (plan: "monthly" | "yearly") => {
+    setLoadingPlan(plan);
+    setError(null);
 
     // 1. Check auth
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: sessionData } = await supabase.auth.getSession();
+    const user = sessionData.session?.user;
     if (!user) {
-      router.push(`/auth/login?redirectTo=/pricing`);
+      const redirectTo = `/pricing?checkoutPlan=${plan}${selectedCharity ? `&charity=${selectedCharity}` : ""}`;
+      window.location.assign(`/auth/login?redirectTo=${encodeURIComponent(redirectTo)}`);
       return;
     }
 
@@ -54,6 +63,7 @@ function PricingContent() {
       const res = await fetch("/api/stripe/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
         body: JSON.stringify({
           plan,
           charityId: selectedCharity,
@@ -62,16 +72,31 @@ function PricingContent() {
       });
 
       const data = await res.json();
+      if (res.status === 401) {
+        const redirectTo = `/pricing?checkoutPlan=${plan}${selectedCharity ? `&charity=${selectedCharity}` : ""}`;
+        window.location.assign(`/auth/login?redirectTo=${encodeURIComponent(redirectTo)}`);
+        return;
+      }
+
       if (data.url) {
         window.location.href = data.url;
       } else {
         throw new Error(data.error ?? "Failed to initiate checkout");
       }
     } catch (err: any) {
-      alert(err.message);
-      setLoading(false);
+      setError(err.message);
+      setLoadingPlan(null);
     }
-  }
+  }, [selectedCharity, supabase]);
+
+  useEffect(() => {
+    if (autoCheckoutStarted.current) return;
+    if (checkoutPlan !== "monthly" && checkoutPlan !== "yearly") return;
+    if (!selectedCharity) return;
+
+    autoCheckoutStarted.current = true;
+    handleCheckout(checkoutPlan);
+  }, [checkoutPlan, handleCheckout, selectedCharity]);
 
   return (
     <div className="min-h-screen bg-[#0f1117] pt-32 pb-24">
@@ -100,6 +125,11 @@ function PricingContent() {
 
         {/* Charity Selector */}
         <div className="max-w-md mx-auto mb-12 card p-6 text-center border-t-2 border-brand-500">
+          {error && (
+            <div className="mb-4 rounded-lg border border-red-500/20 bg-red-500/10 px-3 py-2 text-sm text-red-400">
+              {error}
+            </div>
+          )}
           <label className="block text-sm font-medium text-slate-300 mb-2">
             Who do you want to support?
           </label>
@@ -129,14 +159,14 @@ function PricingContent() {
             
             <button
               onClick={() => handleCheckout("monthly")}
-              disabled={loading || !selectedCharity}
+              disabled={Boolean(loadingPlan) || !selectedCharity}
               className={`w-full py-4 rounded-xl font-bold text-sm transition-all duration-200 flex justify-center items-center gap-2 ${
                 !isYearly 
                   ? "bg-brand-500 hover:bg-brand-400 text-white shadow-xl shadow-brand-500/20" 
                   : "bg-transparent border border-[#2a2d3d] text-white hover:border-brand-500"
               }`}
             >
-              {loading && !isYearly ? <Loader2 className="w-5 h-5 animate-spin" /> : "Subscribe Monthly"}
+              {loadingPlan === "monthly" ? <Loader2 className="w-5 h-5 animate-spin" /> : "Subscribe Monthly"}
             </button>
             <FeaturesList />
           </div>
@@ -156,14 +186,14 @@ function PricingContent() {
             
             <button
               onClick={() => handleCheckout("yearly")}
-              disabled={loading || !selectedCharity}
+              disabled={Boolean(loadingPlan) || !selectedCharity}
               className={`w-full py-4 rounded-xl font-bold text-sm transition-all duration-200 flex justify-center items-center gap-2 ${
                 isYearly 
                   ? "bg-brand-500 hover:bg-brand-400 text-white shadow-xl shadow-brand-500/20" 
                   : "bg-transparent border border-[#2a2d3d] text-white hover:border-brand-500"
               }`}
             >
-              {loading && isYearly ? <Loader2 className="w-5 h-5 animate-spin" /> : "Subscribe Yearly"}
+              {loadingPlan === "yearly" ? <Loader2 className="w-5 h-5 animate-spin" /> : "Subscribe Yearly"}
             </button>
             <FeaturesList />
           </div>

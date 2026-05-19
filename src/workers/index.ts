@@ -25,6 +25,7 @@ import { env } from "@/infrastructure/config/env";
 import { startObservabilityHttpServer } from "@/observability/http-server";
 import { queueWaitingJobs } from "@/observability/metrics";
 import { getQueue } from "@/queues/queue-factory";
+import "dotenv/config";
 
 const workers = [
   createWorker<EmailJobData>(QUEUE_NAMES.email, processEmailJob),

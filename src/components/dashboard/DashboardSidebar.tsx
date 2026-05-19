@@ -13,6 +13,7 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { createClient } from "@/lib/supabase/client";
 import type { Profile } from "@/types/database";
 
 interface SidebarProps {
@@ -32,8 +33,16 @@ export default function DashboardSidebar({ profile, isAdmin }: SidebarProps) {
   const pathname = usePathname();
 
   async function handleSignOut() {
-    await fetch("/api/auth/signout", { method: "POST" });
-    window.location.href = "/";
+    try {
+      await fetch("/api/auth/signout", {
+        method: "POST",
+        credentials: "same-origin",
+      });
+    } finally {
+      const supabase: any = createClient();
+      await supabase.auth.signOut().catch(() => undefined);
+      window.location.assign("/");
+    }
   }
 
   return (

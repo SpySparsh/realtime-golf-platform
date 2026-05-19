@@ -11,6 +11,7 @@ import {
   enqueueSubscriptionRenewal,
 } from "@/queues/subscription.queue";
 import type { UpdateSubscriptionInput } from "@/validators/subscriptions.validator";
+import { notFound } from "@/utils/app-error";
 
 export class SubscriptionsService {
   constructor(
@@ -26,7 +27,12 @@ export class SubscriptionsService {
 
   async updateUserSubscription(userId: string, input: UpdateSubscriptionInput) {
     const { data, error } = await this.subscriptionsRepository.updateForUser(userId, input);
-    if (error) throw error;
+    if (error) {
+      if (error.code === "PGRST116") {
+        throw notFound("No subscription found for this account");
+      }
+      throw error;
+    }
     return data;
   }
 
@@ -59,6 +65,26 @@ export class SubscriptionsService {
 
     await this.scheduleLifecycleJobs(data);
     return data;
+  }
+
+  async recordWebhookTransition(input: {
+    subscription: any;
+    toStatus: SubscriptionLifecycleState;
+    reason: SubscriptionTransitionReason;
+    providerEventId?: string;
+    metadata?: Record<string, unknown>;
+  }) {
+    if (!input.subscription) return;
+
+    await this.auditRepository?.record({
+      subscription_id: input.subscription.id,
+      user_id: input.subscription.user_id,
+      from_status: null,
+      to_status: input.toStatus,
+      reason: input.reason,
+      provider_event_id: input.providerEventId,
+      metadata: input.metadata,
+    });
   }
 
   async scheduleLifecycleJobs(subscription: any) {

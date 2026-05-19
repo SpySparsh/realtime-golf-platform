@@ -1,4 +1,5 @@
 import { env } from "@/infrastructure/config/env";
+import { randomUUID } from "crypto";
 import { logger } from "@/observability/logger";
 import { enqueueEmailNotification } from "@/queues/email.queue";
 import { DrawEntriesRepository } from "@/repositories/draw-entries.repository";
@@ -6,14 +7,31 @@ import { DrawsRepository } from "@/repositories/draws.repository";
 import { ScoreSnapshotsRepository } from "@/repositories/score-snapshots.repository";
 import { SubscriptionsRepository } from "@/repositories/subscriptions.repository";
 import { WinnersRepository } from "@/repositories/winners.repository";
+import { AppError } from "@/utils/app-error";
 
 type WinnerInsert = {
   draw_id: string;
+  draw_entry_id: string;
   user_id: string;
-  match_tier: string;
+  match_tier: "five_match" | "four_match" | "three_match";
+  matched_numbers: number[];
   prize_amount_pence: number;
-  verification_status: string;
-  payout_status: string;
+  verification_status: "pending";
+  payout_status: "pending";
+};
+
+type DrawEntryInsert = {
+  id: string;
+  draw_id: string;
+  user_id: string;
+  entry_numbers: number[];
+  match_count: number;
+};
+
+type MatchedUser = {
+  userId: string;
+  drawEntryId: string;
+  matchedNumbers: number[];
 };
 
 export class DrawEngineService {
@@ -26,8 +44,10 @@ export class DrawEngineService {
   ) {}
 
   async executeMonthlyDraw(drawMonth: string) {
+    logger.info("draw.execute.started", { drawMonth });
+
     const { data: subs, error: subsErr } = await this.subscriptionsRepository.findActiveSubscriptions();
-    if (subsErr) throw subsErr;
+    this.assertNoSupabaseError(subsErr, "load active subscriptions");
 
     const activeSubscriptions = subs ?? [];
     const totalCurrentPool = activeSubscriptions.reduce(
@@ -35,7 +55,9 @@ export class DrawEngineService {
       0
     );
 
-    const { data: lastDraw } = await this.drawsRepository.findLatestRollover();
+    const { data: lastDraw, error: lastDrawErr } = await this.drawsRepository.findLatestRollover();
+    this.assertNoSupabaseError(lastDrawErr, "load latest rollover");
+
     const rolloverFromLastMonth = lastDraw?.rollover_amount_pence ?? 0;
     const totalPoolWithRollover = totalCurrentPool + rolloverFromLastMonth;
     const drawnNumbers = await this.generateDrawNumbers();
@@ -47,7 +69,10 @@ export class DrawEngineService {
       rollover_amount_pence: 0,
       status: "published",
     });
-    if (drawErr) throw drawErr;
+    this.assertNoSupabaseError(drawErr, "create published draw");
+    if (!draw?.id) {
+      throw new AppError("Draw creation did not return a draw id", 500, "DRAW_CREATE_FAILED");
+    }
 
     const activeUserIds = new Set<string>(
       activeSubscriptions.map((subscription: any) => String(subscription.user_id))
@@ -57,7 +82,7 @@ export class DrawEngineService {
 
     if (matchResult.drawEntriesToInsert.length > 0) {
       const { error } = await this.drawEntriesRepository.insertMany(matchResult.drawEntriesToInsert);
-      if (error) throw error;
+      this.assertNoSupabaseError(error, "insert draw entries");
     }
 
     const { winnersToInsert, rollover } = this.calculateWinners({
@@ -70,18 +95,27 @@ export class DrawEngineService {
 
     if (winnersToInsert.length > 0) {
       const { error } = await this.winnersRepository.insertMany(winnersToInsert);
-      if (error) throw error;
+      this.assertNoSupabaseError(error, "insert winners");
       await this.sendWinnerEmails(winnersToInsert, drawMonth);
     }
 
-    await this.drawsRepository.updateRollover(draw.id, rollover);
+    const { error: rolloverErr } = await this.drawsRepository.updateRollover(draw.id, rollover);
+    this.assertNoSupabaseError(rolloverErr, "update rollover");
 
+    logger.info("draw.execute.completed", {
+      drawMonth,
+      drawId: draw.id,
+      activeSubscriberCount: activeSubscriptions.length,
+      entriesCount: matchResult.drawEntriesToInsert.length,
+      winnersCount: winnersToInsert.length,
+      rollover,
+    });
     return { success: true, draw, winnersCount: winnersToInsert.length };
   }
 
   private async generateDrawNumbers() {
     const { data: numbersData, error } = await this.drawsRepository.generateAlgorithmicNumbers(5);
-    if (error) throw error;
+    this.assertNoSupabaseError(error, "generate draw numbers");
 
     const drawnNumbers: number[] = (numbersData ?? []).map((row: any) => row.score).slice(0, 5);
 
@@ -100,7 +134,7 @@ export class DrawEngineService {
 
   private async createUserScoreSnapshot() {
     const { data: allScores, error } = await this.scoreSnapshotsRepository.findAllScoresForDrawSnapshot();
-    if (error) throw error;
+    this.assertNoSupabaseError(error, "load score snapshot");
 
     const userScoreMap = new Map<string, number[]>();
     for (const scoreRow of allScores ?? []) {
@@ -122,26 +156,30 @@ export class DrawEngineService {
     drawnNumbers: number[],
     activeUserIds: Set<string>
   ) {
-    const match5Users: string[] = [];
-    const match4Users: string[] = [];
-    const match3Users: string[] = [];
-    const drawEntriesToInsert: Record<string, unknown>[] = [];
+    const match5Users: MatchedUser[] = [];
+    const match4Users: MatchedUser[] = [];
+    const match3Users: MatchedUser[] = [];
+    const drawEntriesToInsert: DrawEntryInsert[] = [];
 
     for (const [userId, userScores] of scoreMap.entries()) {
       if (!activeUserIds.has(userId)) continue;
 
-      const matchCount = userScores.filter((score) => drawnNumbers.includes(score)).length;
+      const matchedNumbers = userScores.filter((score) => drawnNumbers.includes(score));
+      const matchCount = matchedNumbers.length;
+      const drawEntryId = randomUUID();
 
       drawEntriesToInsert.push({
+        id: drawEntryId,
         draw_id: drawId,
         user_id: userId,
         entry_numbers: userScores,
         match_count: matchCount,
       });
 
-      if (matchCount === 5) match5Users.push(userId);
-      else if (matchCount === 4) match4Users.push(userId);
-      else if (matchCount === 3) match3Users.push(userId);
+      const matchedUser = { userId, drawEntryId, matchedNumbers };
+      if (matchCount === 5) match5Users.push(matchedUser);
+      else if (matchCount === 4) match4Users.push(matchedUser);
+      else if (matchCount === 3) match3Users.push(matchedUser);
     }
 
     return { drawEntriesToInsert, match5Users, match4Users, match3Users };
@@ -150,35 +188,37 @@ export class DrawEngineService {
   private calculateWinners(input: {
     drawId: string;
     totalPoolWithRollover: number;
-    match5Users: string[];
-    match4Users: string[];
-    match3Users: string[];
+    match5Users: MatchedUser[];
+    match4Users: MatchedUser[];
+    match3Users: MatchedUser[];
   }) {
     const winnersToInsert: WinnerInsert[] = [];
     let rollover = 0;
 
-    rollover += this.allocateTier(input.drawId, input.match5Users, Math.floor(input.totalPoolWithRollover * 0.4), "match_5", winnersToInsert);
-    rollover += this.allocateTier(input.drawId, input.match4Users, Math.floor(input.totalPoolWithRollover * 0.35), "match_4", winnersToInsert);
-    rollover += this.allocateTier(input.drawId, input.match3Users, Math.floor(input.totalPoolWithRollover * 0.25), "match_3", winnersToInsert);
+    rollover += this.allocateTier(input.drawId, input.match5Users, Math.floor(input.totalPoolWithRollover * 0.4), "five_match", winnersToInsert);
+    rollover += this.allocateTier(input.drawId, input.match4Users, Math.floor(input.totalPoolWithRollover * 0.35), "four_match", winnersToInsert);
+    rollover += this.allocateTier(input.drawId, input.match3Users, Math.floor(input.totalPoolWithRollover * 0.25), "three_match", winnersToInsert);
 
     return { winnersToInsert, rollover };
   }
 
   private allocateTier(
     drawId: string,
-    userIds: string[],
+    users: MatchedUser[],
     poolAmount: number,
-    matchTier: string,
+    matchTier: WinnerInsert["match_tier"],
     winnersToInsert: WinnerInsert[]
   ) {
-    if (userIds.length === 0) return poolAmount;
+    if (users.length === 0) return poolAmount;
 
-    const payout = Math.floor(poolAmount / userIds.length);
-    userIds.forEach((userId) =>
+    const payout = Math.floor(poolAmount / users.length);
+    users.forEach((user) =>
       winnersToInsert.push({
         draw_id: drawId,
-        user_id: userId,
+        draw_entry_id: user.drawEntryId,
+        user_id: user.userId,
         match_tier: matchTier,
+        matched_numbers: user.matchedNumbers,
         prize_amount_pence: payout,
         verification_status: "pending",
         payout_status: "pending",
@@ -232,5 +272,29 @@ export class DrawEngineService {
     } catch (error) {
       console.error("Winner email loop error:", error);
     }
+  }
+
+  private assertNoSupabaseError(error: any, operation: string) {
+    if (!error) return;
+
+    logger.error("draw.execute.supabase_error", {
+      operation,
+      code: error.code,
+      message: error.message,
+      details: error.details,
+      hint: error.hint,
+    });
+
+    const statusCode =
+      error.code === "23505" ? 409 :
+      error.code === "23503" || error.code === "23514" || error.code === "22P02" ? 400 :
+      500;
+
+    throw new AppError(`Draw execution failed during ${operation}: ${error.message}`, statusCode, "DRAW_EXECUTION_FAILED", {
+      operation,
+      code: error.code,
+      details: error.details,
+      hint: error.hint,
+    });
   }
 }

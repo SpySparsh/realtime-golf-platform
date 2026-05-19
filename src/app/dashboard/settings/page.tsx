@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { Loader2, ExternalLink, CheckCircle, AlertCircle } from "lucide-react";
 import type { Profile, Subscription } from "@/types/database";
@@ -20,27 +20,47 @@ export default function SettingsPage() {
   const [phone, setPhone] = useState("");
 
   // @ts-ignore - Bypass Supabase local schema typings mismatch
-  const supabase: any = createClient();
+  const supabase: any = useMemo(() => createClient(), []);
 
   useEffect(() => {
+    let mounted = true;
+
     async function loadData() {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      setLoading(true);
+      setError(null);
+      try {
+        const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+        if (sessionError) throw sessionError;
+        const user = sessionData.session?.user;
+        if (!user) {
+          window.location.href = "/auth/login?redirectTo=/dashboard/settings";
+          return;
+        }
 
-      const [profRes, subRes] = await Promise.all([
-        supabase.from("profiles").select("*").eq("id", user.id).single(),
-        supabase.from("subscriptions").select("*").eq("user_id", user.id).maybeSingle(),
-      ]);
+        const [profRes, subRes] = await Promise.all([
+          supabase.from("profiles").select("*").eq("id", user.id).single(),
+          supabase.from("subscriptions").select("*").eq("user_id", user.id).maybeSingle(),
+        ]);
 
-      if (profRes.data) {
+        if (profRes.error) throw profRes.error;
+        if (subRes.error) throw subRes.error;
+        if (!mounted) return;
+
         setProfile(profRes.data);
         setFullName(profRes.data.full_name ?? "");
         setPhone(profRes.data.phone ?? "");
+        setSubscription(subRes.data ?? null);
+      } catch (err: any) {
+        if (mounted) setError(err.message ?? "Unable to load settings");
+      } finally {
+        if (mounted) setLoading(false);
       }
-      if (subRes.data) setSubscription(subRes.data);
-      setLoading(false);
     }
+
     loadData();
+    return () => {
+      mounted = false;
+    };
   }, [supabase]);
 
   async function handleSaveProfile(e: React.FormEvent) {
@@ -68,10 +88,14 @@ export default function SettingsPage() {
     try {
       const res = await fetch("/api/stripe/portal", { method: "POST" });
       const data = await res.json();
+      if (res.status === 401) {
+        window.location.assign("/auth/login?redirectTo=/dashboard/settings");
+        return;
+      }
       if (data.url) window.location.href = data.url;
       else throw new Error(data.error ?? "Failed to load portal");
     } catch (err: any) {
-      alert(err.message);
+      setError(err.message);
       setPortalLoading(false);
     }
   }
@@ -80,6 +104,7 @@ export default function SettingsPage() {
     return (
       <div className="flex items-center justify-center h-64">
         <Loader2 className="w-8 h-8 animate-spin text-brand-400" />
+        {error && <p className="ml-3 text-sm text-red-400">{error}</p>}
       </div>
     );
   }

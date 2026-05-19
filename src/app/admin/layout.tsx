@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { ensureUserProfile } from "@/lib/auth/profile";
 import { redirect } from "next/navigation";
 import AdminSidebar from "@/components/admin/AdminSidebar";
 
@@ -12,11 +13,7 @@ export default async function AdminLayout({
 
   if (!user) redirect("/auth/login");
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("is_admin")
-    .eq("id", user.id)
-    .single();
+  const profile: any = await ensureUserProfile(user);
 
   // @ts-ignore - Supabase type mismatch
   if (!profile?.is_admin) {

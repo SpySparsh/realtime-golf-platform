@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { ensureUserProfile } from "@/lib/auth/profile";
 import { redirect } from "next/navigation";
 import DashboardSidebar from "@/components/dashboard/DashboardSidebar";
 import DashboardHeader from "@/components/dashboard/DashboardHeader";
@@ -16,15 +17,11 @@ export default async function DashboardLayout({
 
   if (!user) redirect("/auth/login");
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("*")
-    .eq("id", user.id)
-    .single();
+  const profile: any = await ensureUserProfile(user);
 
   const { data: subscription } = await supabase
     .from("subscriptions")
-    .select("*, charity:charities(*)")
+    .select("*, charity:charities!subscriptions_charity_id_fkey(*)")
     .eq("user_id", user.id)
     .maybeSingle();
 

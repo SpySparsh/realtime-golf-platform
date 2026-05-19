@@ -21,6 +21,7 @@ import {
   type TournamentRoomPayload,
 } from "@/websocket/events";
 import { canJoinManagedRoom, socketRooms } from "@/websocket/rooms";
+import "dotenv/config";
 
 export type SocketServerRuntime = {
   httpServer: HttpServer;

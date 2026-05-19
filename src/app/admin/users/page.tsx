@@ -1,17 +1,17 @@
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { Search, UserCircle, ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { format } from "date-fns";
 
 export default async function AdminUsersPage() {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
 
   // Fetch profiles with their latest subscription status
   const { data: users } = await supabase
     .from("profiles")
     .select(`
       *,
-      subscriptions(status, plan)
+      subscriptions:subscriptions!subscriptions_user_id_fkey(status, plan)
     `)
     .order("created_at", { ascending: false });
 

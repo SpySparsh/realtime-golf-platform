@@ -1,5 +1,6 @@
+import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
-import { stripe } from "@/lib/stripe";
+import { createStripeService } from "@/modules/stripe.module";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { CheckCircle } from "lucide-react";
@@ -15,19 +16,18 @@ export default async function SubscribeSuccessPage(props: {
   if (!session_id) redirect("/pricing");
 
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) redirect("/auth/login");
 
-  // Retrieve session to confirm payment
   let plan = "monthly";
   try {
-    const session = await stripe.checkout.sessions.retrieve(session_id, {
-      expand: ["subscription"],
-    });
-    const sub = session.subscription as import("stripe").Stripe.Subscription | null;
-    plan = sub?.metadata?.plan ?? "monthly";
+    const stripeService = createStripeService(createAdminClient());
+    const subscription = await stripeService.reconcileCheckoutSession(session_id, user.id);
+    plan = subscription?.plan ?? "monthly";
   } catch {
-    // Non-fatal — session might already be processed
+    // Non-fatal: Stripe will retry the webhook if return-page reconciliation fails.
   }
 
   return (
@@ -53,7 +53,7 @@ export default async function SubscribeSuccessPage(props: {
 
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
           <Link href="/dashboard" className="btn-primary">
-            Go to Dashboard →
+            Go to Dashboard
           </Link>
           <Link href="/dashboard/scores" className="btn-secondary">
             Enter Scores

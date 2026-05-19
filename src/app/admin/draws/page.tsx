@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { formatPence, formatDrawMonth } from "@/lib/utils";
 import { Play, CheckCircle, AlertCircle, Loader2 } from "lucide-react";
@@ -13,16 +13,17 @@ export default function AdminDrawsPage() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
 
-  async function fetchDraws() {
+  const fetchDraws = useCallback(async () => {
     setLoading(true);
-    const { data } = await supabase.from("draws").select("*").order("draw_month", { ascending: false });
+    const { data, error: fetchError } = await supabase.from("draws").select("*").order("draw_month", { ascending: false });
+    if (fetchError) setError(fetchError.message);
     setDraws(data ?? []);
     setLoading(false);
-  }
+  }, [supabase]);
 
-  useEffect(() => { fetchDraws(); }, []);
+  useEffect(() => { fetchDraws(); }, [fetchDraws]);
 
   async function executeDraw(drawMonth: string) {
     if (!confirm(`Are you sure you want to execute the draw for ${formatDrawMonth(drawMonth)}? This will calculate winners and cannot be undone.`)) return;
@@ -43,8 +44,12 @@ export default function AdminDrawsPage() {
         throw new Error(data.error ?? "Failed to execute draw.");
       }
 
-      const { draw, winnersCount } = await res.json();
-      setSuccess(`Draw executed! Numbers: ${draw.drawn_numbers.join(", ")}. ${winnersCount} winners found.`);
+      const data = await res.json();
+      if (data.queued) {
+        setSuccess(`Draw queued for processing. Job ID: ${data.jobId ?? "pending"}.`);
+      } else {
+        setSuccess(`Draw executed! Numbers: ${data.draw.drawn_numbers.join(", ")}. ${data.winnersCount} winners found.`);
+      }
       fetchDraws();
     } catch (err: any) {
       setError(err.message);

@@ -6,7 +6,7 @@ export class LeaderboardService {
   async getSnapshot(input: { scope: LeaderboardScope; month?: string; userId?: string }) {
     let query = this.supabase
       .from("scores")
-      .select("user_id, score, played_on, created_at, profile:profiles(full_name, display_name)");
+      .select("user_id, score, played_on, created_at, profile:profiles!scores_user_id_fkey(full_name, display_name)");
 
     if (input.scope === "monthly" && input.month) {
       const start = new Date(`${input.month}-01T00:00:00.000Z`);

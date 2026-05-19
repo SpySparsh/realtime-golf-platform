@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { Plus, Edit2, Trash2, CheckCircle, XCircle, Loader2 } from "lucide-react";
 import type { Charity } from "@/types/database";
@@ -8,6 +8,7 @@ import type { Charity } from "@/types/database";
 export default function AdminCharitiesPage() {
   const [charities, setCharities] = useState<Charity[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   
@@ -20,16 +21,18 @@ export default function AdminCharitiesPage() {
   const [isActive, setIsActive] = useState(true);
   const [isFeatured, setIsFeatured] = useState(false);
   
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
 
-  useEffect(() => { fetchCharities(); }, []);
-
-  async function fetchCharities() {
+  const fetchCharities = useCallback(async () => {
     setLoading(true);
-    const { data } = await supabase.from("charities").select("*").order("name");
+    setError(null);
+    const { data, error: fetchError } = await supabase.from("charities").select("*").order("name");
+    if (fetchError) setError(fetchError.message);
     setCharities(data ?? []);
     setLoading(false);
-  }
+  }, [supabase]);
+
+  useEffect(() => { fetchCharities(); }, [fetchCharities]);
 
   function resetForm() {
     setName("");
@@ -69,10 +72,18 @@ export default function AdminCharitiesPage() {
 
     if (editingId) {
       // @ts-ignore - Supabase types are not generated yet, bypassing strict check
-      await supabase.from("charities").update(payload).eq("id", editingId);
+      const { error: saveError } = await supabase.from("charities").update(payload).eq("id", editingId);
+      if (saveError) {
+        setError(saveError.message);
+        return;
+      }
     } else {
       // @ts-ignore - Supabase types are not generated yet, bypassing strict check
-      await supabase.from("charities").insert(payload);
+      const { error: saveError } = await supabase.from("charities").insert(payload);
+      if (saveError) {
+        setError(saveError.message);
+        return;
+      }
     }
     resetForm();
     fetchCharities();
@@ -80,7 +91,11 @@ export default function AdminCharitiesPage() {
 
   async function handleDelete(id: string) {
     if (!confirm("Delete this charity? Caution: active subscriptions may rely on this.")) return;
-    await supabase.from("charities").delete().eq("id", id);
+    const { error: deleteError } = await supabase.from("charities").delete().eq("id", id);
+    if (deleteError) {
+      setError(deleteError.message);
+      return;
+    }
     fetchCharities();
   }
 
@@ -141,6 +156,12 @@ export default function AdminCharitiesPage() {
             <button type="button" onClick={resetForm} className="btn-secondary">Cancel</button>
           </div>
         </form>
+      )}
+
+      {error && (
+        <div className="rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-400">
+          {error}
+        </div>
       )}
 
       <div className="card overflow-hidden">

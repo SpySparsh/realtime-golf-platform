@@ -41,11 +41,27 @@ ALTER TABLE public.draws
 -- 7. Auto-update updated_at on any row modification
 --    (Requires the moddatetime extension — enable it in Supabase Dashboard
 --     under Database > Extensions if not already active.)
+-- 7. Auto-update updated_at on any row modification
+--    Replace moddatetime with a custom trigger function
+
+-- Drop the old trigger if it exists
 DROP TRIGGER IF EXISTS handle_draws_updated_at ON public.draws;
+
+-- Create a function to update updated_at
+CREATE OR REPLACE FUNCTION update_draws_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at := NOW();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Attach the trigger to the table
 CREATE TRIGGER handle_draws_updated_at
-  BEFORE UPDATE ON public.draws
-  FOR EACH ROW
-  EXECUTE PROCEDURE extensions.moddatetime(updated_at);
+BEFORE UPDATE ON public.draws
+FOR EACH ROW
+EXECUTE FUNCTION update_draws_updated_at();
+
 
 -- ============================================================
 -- Verify: quick sanity check on the final column list

@@ -1,38 +1,66 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { formatPence } from "@/lib/utils";
-import { CheckCircle, XCircle, Search, ExternalLink, Loader2 } from "lucide-react";
+import { CheckCircle, XCircle, Search, ExternalLink, Loader2, AlertCircle } from "lucide-react";
+
+type WinnerPayoutRow = {
+  id: string;
+  match_tier: string;
+  prize_amount_pence: number;
+  proof_url: string | null;
+  verification_status: string;
+  payout_status: string;
+  profile: {
+    email: string | null;
+    full_name: string | null;
+  } | null;
+  draw: {
+    draw_month: string;
+    drawn_numbers: number[];
+  } | null;
+};
 
 export default function AdminWinnersPage() {
-  const [winners, setWinners] = useState<any[]>([]);
+  const [winners, setWinners] = useState<WinnerPayoutRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
 
-  useEffect(() => { fetchWinners(); }, []);
-
-  async function fetchWinners() {
+  const fetchWinners = useCallback(async () => {
     setLoading(true);
-    const { data } = await supabase
+    setError(null);
+    const { data, error: fetchError } = await supabase
       .from("winners")
       .select(`
         *,
-        profile:profiles(email, full_name),
-        draw:draws(draw_month, drawn_numbers)
+        profile:profiles!winners_user_id_fkey(email, full_name),
+        draw:draws!winners_draw_id_fkey(draw_month, drawn_numbers)
       `)
       .order("created_at", { ascending: false });
     
-    setWinners(data ?? []);
+    if (fetchError) {
+      setError(`Unable to load winners: ${fetchError.message}`);
+      setWinners([]);
+    } else {
+      setWinners((data ?? []) as WinnerPayoutRow[]);
+    }
     setLoading(false);
-  }
+  }, [supabase]);
+
+  useEffect(() => { fetchWinners(); }, [fetchWinners]);
 
   async function updateStatus(id: string, field: "verification_status" | "payout_status", value: string) {
     if (!confirm(`Change ${field} to ${value}?`)) return;
     
     // @ts-ignore - Supabase dynamic field update typing mismatch
-    await supabase.from("winners").update({ [field]: value }).eq("id", id);
+    const { error: updateError } = await supabase.from("winners").update({ [field]: value }).eq("id", id);
+    if (updateError) {
+      setError(updateError.message);
+      return;
+    }
     fetchWinners();
     
     // In a production app, approving verification might trigger a Resend email to the user
@@ -56,6 +84,12 @@ export default function AdminWinnersPage() {
           />
         </div>
       </div>
+
+      {error && (
+        <div className="flex items-center gap-2 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-400">
+          <AlertCircle className="w-4 h-4 flex-shrink-0" /> {error}
+        </div>
+      )}
 
       <div className="card overflow-hidden">
         {loading ? (

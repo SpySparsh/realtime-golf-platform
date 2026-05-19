@@ -20,12 +20,12 @@ export default async function DashboardPage() {
       .limit(5),
     supabase
       .from("subscriptions")
-      .select("*, charity:charities(*)")
+      .select("*, charity:charities!subscriptions_charity_id_fkey(*)")
       .eq("user_id", user.id)
       .maybeSingle(),
     supabase
       .from("winners")
-      .select("*, draw:draws(draw_month,drawn_numbers)")
+      .select("*, draw:draws!winners_draw_id_fkey(draw_month,drawn_numbers)")
       .eq("user_id", user.id)
       .order("created_at", { ascending: false }),
     supabase
